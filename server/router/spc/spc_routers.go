@@ -267,16 +267,19 @@ type RuntimeRouter struct{}
 func (r *RuntimeRouter) InitSpcRuntimeRouter(Router *gin.RouterGroup, PublicRouter *gin.RouterGroup) {
 	runtimeRouter := Router.Group("spc").Use(middleware.OperationRecord())
 	runtimeRouterWithoutRecord := Router.Group("spc")
+	runtimePublicRouter := PublicRouter.Group("spc").Use(middleware.SpcCollectAuth()) // 公开CSV采集需要认证
+	
 	runtimeApi := api.ApiGroupApp.SpcApiGroup.RuntimeApi
 	{
 		runtimeRouter.POST("calculateLimits", runtimeApi.CalculateLimits)
-		runtimeRouter.POST("collectCsv", runtimeApi.CollectCsv)
+		runtimeRouter.POST("collectCsv", runtimeApi.CollectCsv) // JWT认证
+	}
+	{
+		runtimePublicRouter.POST("collectCsv", runtimeApi.CollectCsv) // JWT或API Token认证
 	}
 	{
 		runtimeRouterWithoutRecord.GET("getChartRuntime", runtimeApi.GetChartRuntime)
 		runtimeRouterWithoutRecord.GET("getCapability", runtimeApi.GetCapability)
 		runtimeRouterWithoutRecord.GET("getDashboard", runtimeApi.GetDashboard)
 	}
-	// Public route for CSV template download (if needed)
-	_ = PublicRouter
 }

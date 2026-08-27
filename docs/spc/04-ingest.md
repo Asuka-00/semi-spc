@@ -2,15 +2,37 @@
 
 本文档定义半导体fab生产线与SPC系统之间的数据摄取接口契约。
 
+## 认证方式
+
+所有数据摄取接口均需要认证，支持两种方式：
+
+### 方式1：JWT Token（用户登录）
+- Header: `x-token: <JWT_TOKEN>`
+- 获取方式：用户通过GVA前端登录后获得
+- 适用场景：手动测试、前端页面调用
+
+### 方式2：API Token（服务集成）
+- Header: `X-API-Token: <API_TOKEN>` 或 `x-token: <API_TOKEN>`
+- 获取方式：在GVA管理后台【系统管理 / API Token】中签发
+  1. 登录GVA管理后台（http://your-server:port/）
+  2. 进入【系统管理】→【API Token】
+  3. 点击【签发Token】
+  4. 选择用户、角色、有效期（天数，-1为永久）
+  5. 输入备注（如："MES服务集成"）
+  6. 复制生成的Token
+- 适用场景：MES/SECS主机、自动化脚本集成
+- **重要**：API Token本质是长期有效的JWT，妥善保管
+
+**认证失败错误**：
+- 未提供token：`未提供认证凭据，请在header中提供x-token（JWT）或X-API-Token（API Token）`
+- token无效：`API Token无效或已失效`
+- token过期：`API Token已过期`
+
 ## 摄取端点
 
 ### POST /api/spc/collect
 
 单次数据采集，采集一个子组的测量数据。
-
-**认证方式**：
-- JWT Token (Header: `x-token`)
-- API Token (Header: `X-API-Token`，适用于MES/SECS主机集成)
 
 **幂等性**：
 - 通过Header `X-Idempotency-Key` 或 body `idempotencyKey` 提供幂等性键
@@ -20,7 +42,7 @@
 **请求Headers**：
 ```
 Content-Type: application/json
-x-token: <JWT Token>
+X-API-Token: <your_api_token>  (或 x-token: <your_jwt>)
 X-Idempotency-Key: <optional, 幂等性键>
 ```
 
@@ -82,23 +104,25 @@ X-Idempotency-Key: <optional, 幂等性键>
 
 | 错误信息 | HTTP状态 | Code | 原因 |
 |----------|----------|------|------|
+| `未提供认证凭据...` | 200 | 7 | 缺少x-token或X-API-Token header |
+| `API Token无效或已失效` | 200 | 7 | token不存在或status=false |
+| `API Token已过期` | 200 | 7 | token.expiresAt < now |
 | `控制图不存在: CHART_XXX` | 200 | 7 | chartCode不存在 |
 | `控制图未启用` | 200 | 7 | chart.status=0 |
 | `测量值数量必须等于子组大小` | 200 | 7 | len(values) != chart.subgroupSize |
 | `亚组号已存在` | 200 | 7 | 相同chartId + subgroupNo重复（非幂等键场景） |
 | `规格配置不存在` | 200 | 7 | chart.specId无效 |
-| `未授权` | 400 | - | JWT/API Token无效或缺失 |
 
 ### POST /api/spc/collectCsv
 
 批量CSV数据采集。
 
-**认证方式**：同上
+**认证方式**：同上（X-API-Token或x-token header）
 
 **请求Headers**：
 ```
 Content-Type: multipart/form-data
-x-token: <JWT Token>
+X-API-Token: <your_api_token>  (或 x-token: <your_jwt>)
 ```
 
 **请求Body**：
@@ -141,11 +165,32 @@ CHART_CD_001,LOT2024001,W002,2024-01-15T10:31:00Z,2,1.24,1.26,1.25,1.23,1.27
 
 ## cURL示例
 
-### 单次采集（幂等）
+### 签发API Token（管理员操作）
+```bash
+# 登录后使用JWT签发API Token
+curl -X POST "https://fab.example.com/sysApiToken/createApiToken" \
+  -H "Content-Type: application/json" \
+  -H "x-token: <ADMIN_JWT_TOKEN>" \
+  -d '{
+    "userId": 2,
+    "authorityId": 888,
+    "days": 365,
+    "remark": "MES服务集成"
+  }'
+
+# 响应示例：
+# {
+#   "code": 0,
+#   "data": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+#   "msg": "签发成功"
+# }
+```
+
+### 单次采集（使用API Token，幂等）
 ```bash
 curl -X POST "https://fab.example.com/api/spc/collect" \
   -H "Content-Type: application/json" \
-  -H "x-token: YOUR_JWT_TOKEN" \
+  -H "X-API-Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
   -H "X-Idempotency-Key: mes-host_1705311000_CHART_CD_001_123" \
   -d '{
     "chartCode": "CHART_CD_001",
@@ -159,10 +204,10 @@ curl -X POST "https://fab.example.com/api/spc/collect" \
   }'
 ```
 
-### CSV批量采集
+### CSV批量采集（使用API Token）
 ```bash
 curl -X POST "https://fab.example.com/api/spc/collectCsv" \
-  -H "x-token: YOUR_JWT_TOKEN" \
+  -H "X-API-Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
   -F "file=@samples.csv"
 ```
 
@@ -170,7 +215,8 @@ curl -X POST "https://fab.example.com/api/spc/collectCsv" \
 
 在生产部署前，请确认：
 
-- [ ] **认证**：已配置API Token或JWT signing-key（不使用默认值）
+- [ ] **签发API Token**：在GVA后台【系统管理/API Token】签发长期token
+- [ ] **配置认证头**：MES/SECS主机在HTTP请求中添加`X-API-Token`或`x-token`
 - [ ] **幂等性**：MES/SECS主机已实现X-Idempotency-Key生成逻辑
 - [ ] **错误处理**：客户端正确处理HTTP 200 + code=7的业务错误
 - [ ] **OOC/OOS告警**：客户端能解析violations和alarms字段
@@ -186,7 +232,7 @@ curl -X POST "https://fab.example.com/api/spc/collectCsv" \
 ```yaml
 # JWT签名密钥（默认值：qmPlus）
 jwt:
-  signing-key: "YOUR_PRODUCTION_SECRET_KEY_HERE"  # 最少32字符
+  signing-key: "YOUR_PRODUCTION_SECRET_KEY_HERE"  # 最少32字符，API Token也使用此密钥
 
 # MySQL root密码
 mysql:
@@ -207,7 +253,25 @@ redis:
 1. 修改admin密码
 2. 创建专用服务账号（通过GVA用户管理）
 3. 配置Casbin权限（仅授予SPC相关API权限）
-4. 为MES集成配置API Token（如使用）
+4. 在【系统管理/API Token】为MES集成签发长期token（建议365天或永久）
+5. 妥善保管API Token（如丢失可在后台作废重新签发）
+
+## API Token生命周期管理
+
+### 签发Token
+- 管理员登录GVA后台
+- 【系统管理】→【API Token】→【签发Token】
+- 选择用户、角色、有效期（-1为永久）
+- 记录token和备注（如"MES主机A"）
+
+### 查询Token
+- 【系统管理】→【API Token】→【Token列表】
+- 可按用户筛选，查看状态和过期时间
+
+### 作废Token
+- 在Token列表点击【作废】
+- Token立即失效（加入黑名单），无法再使用
+- 如需恢复，重新签发新token
 
 ## 错误码速查
 
@@ -223,8 +287,9 @@ redis:
 - cURL命令或HTTP请求日志
 - 完整的响应body（包括code和msg）
 - 控制图配置截图（SPC系统中的chart配置）
+- API Token签发记录截图（脱敏token值）
 
 ---
-**版本**: v1.0  
-**最后更新**: 2024-01-15  
+**版本**: v1.1  
+**最后更新**: 2024-01-15（新增API Token认证）  
 **维护**: SPC系统团队

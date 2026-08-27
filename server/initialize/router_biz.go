@@ -16,4 +16,10 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 	publicGroup := routers[1]
 
 	holder(publicGroup, privateGroup)
+
+	// 注册SPC路由
+	spcRouter := router.RouterGroupApp.Spc
+	spcRouter.InitSpcSiteRouter(privateGroup, publicGroup)
+	spcRouter.InitSpcCollectRouter(privateGroup, publicGroup)
+	spcRouter.InitSpcAlarmRouter(privateGroup)
 }

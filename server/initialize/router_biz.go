@@ -20,6 +20,9 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 	// 注册SPC路由
 	spcRouter := router.RouterGroupApp.Spc
 	spcRouter.InitSpcSiteRouter(privateGroup, publicGroup)
+	spcRouter.InitSpcAreaRouter(privateGroup)
+	spcRouter.InitSpcEquipmentRouter(privateGroup)
+	spcRouter.InitSpcChartRouter(privateGroup)
 	spcRouter.InitSpcCollectRouter(privateGroup, publicGroup)
 	spcRouter.InitSpcAlarmRouter(privateGroup)
 }

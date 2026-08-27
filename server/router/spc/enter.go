@@ -6,6 +6,8 @@ import (
 
 type RouterGroup struct {
 	SiteRouter
+	AreaRouter
+	EquipmentRouter
 	ChartRouter
 	CollectRouter
 	AlarmRouter
@@ -13,6 +15,5 @@ type RouterGroup struct {
 }
 
 var (
-	siteServiceApi   = spcService.ServiceGroup{}.SiteService
-	collectApiRouter = spcService.ServiceGroup{}.CollectService
+	_ = spcService.ServiceGroup{}
 )

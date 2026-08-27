@@ -33,10 +33,11 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" min-width="200">
+        <el-table-column label="操作" fixed="right" min-width="280">
           <template #default="scope">
             <el-button type="primary" link icon="edit" @click="openDialog('edit', scope.row)">编辑</el-button>
             <el-button type="primary" link icon="delete" @click="deleteFunc(scope.row)">删除</el-button>
+            <el-button type="success" link icon="cpu" @click="openChamberDrawer(scope.row)">腔室</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -105,13 +106,87 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- Chamber腔室抽屉 -->
+    <el-drawer v-model="chamberDrawerVisible" :title="`腔室管理 - ${currentEquipment?.name || ''}`" size="60%">
+      <div style="padding: 0 20px">
+        <div style="margin-bottom: 15px">
+          <el-button type="primary" icon="plus" @click="openChamberDialog('add')">新增腔室</el-button>
+        </div>
+        <el-table :data="chamberData" style="width: 100%">
+          <el-table-column label="ID" prop="ID" width="80" />
+          <el-table-column label="腔室代码" prop="code" min-width="120" />
+          <el-table-column label="腔室名称" prop="name" min-width="150" />
+          <el-table-column label="状态" prop="status" width="100">
+            <template #default="scope">
+              <el-tag :type="scope.row.status === 1 ? 'success' : 'info'">
+                {{ scope.row.status === 1 ? '启用' : '禁用' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="备注" prop="remark" min-width="150" show-overflow-tooltip />
+          <el-table-column label="操作" fixed="right" width="200">
+            <template #default="scope">
+              <el-button type="primary" link icon="edit" @click="openChamberDialog('edit', scope.row)">编辑</el-button>
+              <el-button type="primary" link icon="delete" @click="deleteChamber(scope.row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-drawer>
+
+    <!-- Chamber对话框 -->
+    <el-dialog v-model="chamberDialogVisible" :title="chamberDialogTitle" width="50%">
+      <el-form ref="chamberFormRef" :model="chamberFormData" :rules="chamberRules" label-width="100px">
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="腔室代码" prop="code">
+              <el-input v-model="chamberFormData.code" placeholder="如：CHAMBER_A" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="腔室名称" prop="name">
+              <el-input v-model="chamberFormData.name" placeholder="请输入腔室名称" clearable />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="状态" prop="status">
+              <el-radio-group v-model="chamberFormData.status">
+                <el-radio :label="1">启用</el-radio>
+                <el-radio :label="0">禁用</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="备注" prop="remark">
+          <el-input v-model="chamberFormData.remark" type="textarea" placeholder="请输入备注" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="closeChamberDialog">取消</el-button>
+          <el-button type="primary" @click="enterChamberDialog">确定</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getEquipmentList, createEquipment, updateEquipment, deleteEquipment } from '@/api/spc/master'
+import {
+  getEquipmentList,
+  createEquipment,
+  updateEquipment,
+  deleteEquipment,
+  getChamberList,
+  createChamber,
+  updateChamber,
+  deleteChamber as apiDeleteChamber
+} from '@/api/spc/master'
 import { formatDate } from '@/utils/format'
 
 const page = ref(1)
@@ -230,6 +305,105 @@ const deleteFunc = async(row) => {
         message: '删除成功'
       })
       getTableData()
+    } else {
+      ElMessage.error(res.msg || '删除失败')
+    }
+  })
+}
+
+// Chamber管理
+const chamberDrawerVisible = ref(false)
+const currentEquipment = ref(null)
+const chamberData = ref([])
+
+const chamberDialogVisible = ref(false)
+const chamberDialogTitle = ref('')
+const chamberFormRef = ref(null)
+const chamberFormData = ref({
+  code: '',
+  name: '',
+  equipmentId: null,
+  status: 1,
+  remark: ''
+})
+
+const chamberRules = reactive({
+  code: [{ required: true, message: '请输入腔室代码', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入腔室名称', trigger: 'blur' }]
+})
+
+const openChamberDrawer = async(equipment) => {
+  currentEquipment.value = equipment
+  chamberDrawerVisible.value = true
+  await loadChamberData()
+}
+
+const loadChamberData = async() => {
+  if (!currentEquipment.value) return
+  try {
+    const res = await getChamberList({ page: 1, pageSize: 100, equipmentId: currentEquipment.value.ID })
+    if (res.code === 0) {
+      chamberData.value = res.data.list || []
+    }
+  } catch (error) {
+    ElMessage.error('加载腔室列表失败')
+  }
+}
+
+const openChamberDialog = (type, row) => {
+  chamberDialogVisible.value = true
+  if (type === 'add') {
+    chamberDialogTitle.value = '新增腔室'
+    chamberFormData.value = {
+      code: '',
+      name: '',
+      equipmentId: currentEquipment.value.ID,
+      status: 1,
+      remark: ''
+    }
+  } else {
+    chamberDialogTitle.value = '编辑腔室'
+    chamberFormData.value = { ...row }
+  }
+}
+
+const closeChamberDialog = () => {
+  chamberDialogVisible.value = false
+  chamberFormRef.value?.resetFields()
+}
+
+const enterChamberDialog = async() => {
+  chamberFormRef.value?.validate(async(valid) => {
+    if (valid) {
+      let res
+      if (chamberFormData.value.ID) {
+        res = await updateChamber(chamberFormData.value)
+      } else {
+        res = await createChamber(chamberFormData.value)
+      }
+      if (res.code === 0) {
+        ElMessage.success(chamberFormData.value.ID ? '编辑成功' : '创建成功')
+        closeChamberDialog()
+        loadChamberData()
+      } else {
+        ElMessage.error(res.msg || '操作失败')
+      }
+    }
+  })
+}
+
+const deleteChamber = async(row) => {
+  ElMessageBox.confirm('确定要删除该腔室吗?', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async() => {
+    const res = await apiDeleteChamber({ ID: row.ID })
+    if (res.code === 0) {
+      ElMessage.success('删除成功')
+      loadChamberData()
+    } else {
+      ElMessage.error(res.msg || '删除失败')
     }
   })
 }

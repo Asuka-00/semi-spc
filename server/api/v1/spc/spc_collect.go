@@ -12,12 +12,13 @@ type CollectApi struct{}
 
 // CollectData
 // @Tags      SpcCollect
-// @Summary   SPC数据采集
+// @Summary   SPC数据采集（支持幂等性）
 // @Security  ApiKeyAuth
 // @accept    application/json
 // @Produce   application/json
-// @Param     data  body      spcService.CollectDataRequest                           true  "采集数据"
-// @Success   200   {object}  response.Response{data=spcService.CollectDataResponse}  "采集成功"
+// @Param     X-Idempotency-Key  header    string                                              false  "幂等性键（可选）"
+// @Param     data               body      spcService.CollectDataRequest                       true   "采集数据"
+// @Success   200                {object}  response.Response{data=spcService.CollectDataResponse}  "采集成功"
 // @Router    /spc/collect [post]
 func (a *CollectApi) CollectData(c *gin.Context) {
 	var req spcService.CollectDataRequest
@@ -25,6 +26,12 @@ func (a *CollectApi) CollectData(c *gin.Context) {
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return
+	}
+
+	// 从header读取幂等性键
+	idempotencyKey := c.GetHeader("X-Idempotency-Key")
+	if idempotencyKey != "" {
+		req.IdempotencyKey = &idempotencyKey
 	}
 
 	result, err := collectService.CollectData(&req)

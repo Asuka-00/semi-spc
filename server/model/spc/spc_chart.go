@@ -15,6 +15,7 @@ type SpcChart struct {
 	SubgroupSize  int      `json:"subgroupSize" gorm:"default:5;comment:子组大小 n"`
 	Ruleset       string   `json:"ruleset" gorm:"type:varchar(100);default:'WE1';comment:规则集 逗号分隔 e.g. WE1,WE2,NELSON5"`
 	LimitMethod   string   `json:"limitMethod" gorm:"type:varchar(20);default:'CALC';comment:控制限方法 CALC/MANUAL"`
+	HoldLot       bool     `json:"holdLot" gorm:"default:false;comment:是否在CRIT告警时自动Hold批次"`
 	EwmaLambda    *float64 `json:"ewmaLambda" gorm:"type:decimal(5,4);comment:EWMA平滑系数 λ (0,1)"`
 	CusumK        *float64 `json:"cusumK" gorm:"type:decimal(15,6);comment:CUSUM参考值 K"`
 	CusumH        *float64 `json:"cusumH" gorm:"type:decimal(15,6);comment:CUSUM决策区间 H"`

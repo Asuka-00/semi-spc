@@ -116,6 +116,14 @@ npm run serve
 
 默认账户: `admin` / `123456`
 
+**⚠️ 生产部署安全提示**：本系统包含半导体SPC模块，**生产环境必须修改以下默认值**（见`server/config.yaml`）：
+- **JWT签名密钥**：`jwt.signing-key`（默认`qmPlus`仅用于开发，API Token也用此密钥）
+- **MySQL密码**：`mysql.password`（默认`Aa@6447985`仅用于开发）
+- **Redis密码**：`redis.password`
+- **admin密码**：初始化后立即修改`admin/123456`账号
+
+详细的SPC模块API Token认证和集成指南见 `docs/spc/04-ingest.md`。
+
 ### 5. API文档
 
 启动后端后访问Swagger文档：

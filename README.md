@@ -1,22 +1,251 @@
+# SPC统计过程控制系统
 
-<div align=center>
-<img src="http://qmplusimg.henrongyi.top/gvalogo.jpg" width="300" height="300" />
-</div>
+## 项目简介
 
-<div align=center>
-<img src="https://img.shields.io/badge/golang-1.20-blue"/>
-<img src="https://img.shields.io/badge/gin-1.9.1-lightBlue"/>
-<img src="https://img.shields.io/badge/vue-3.3.4-brightgreen"/>
-<img src="https://img.shields.io/badge/element--plus-2.3.8-green"/>
-<img src="https://img.shields.io/badge/gorm-1.25.2-red"/>
-<img src="https://gitcode.com/flipped-aurora/gin-vue-admin/star/badge.svg"/>
-</div>
+这是一个基于 **gin-vue-admin v2.9.1** 开发的半导体行业通用SPC（Statistical Process Control，统计过程控制）系统。系统提供完整的实时数据采集、OOC/OOS检测、过程能力分析和告警管理功能。
 
-<div align=center>
-<a href="https://trendshift.io/repositories/3250" target="_blank"><img src="https://trendshift.io/api/badge/repositories/3250" alt="Calcium-Ion%2Fnew-api | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-</div>
+## 技术栈
 
-[English](./README-en.md) | 简体中文
+### 后端
+- **框架**: Gin + Gorm + Zap + Viper + Swagger
+- **数据库**: MySQL 8 / MariaDB (InnoDB, utf8mb4)
+- **认证**: JWT + Casbin
+- **语言**: Go 1.22+
+
+### 前端
+- **框架**: Vue 3 + Vite + Element Plus
+- **状态管理**: Pinia
+- **路由**: Vue Router（动态路由）
+
+### 基础平台
+- **GVA版本**: v2.9.1 (2026-03-27发布, Apache-2.0许可)
+- **说明**: 使用v2.9.1以符合Apache-2.0许可要求，2026-05-28之后的版本为BSL 1.1
+
+## 核心功能
+
+### 1. SPC计算引擎
+- ✅ 控制图常数计算 (A₂, D₃, D₄, A₃, B₃, B₄, d₂, E₂)
+- ✅ 多种控制图类型 (I-MR, X̄-R, X̄-S, P, NP, C, U, EWMA, CUSUM)
+- ✅ Western Electric规则 (WE1-WE4)
+- ✅ Nelson规则 (NELSON1-NELSON8)
+- ✅ 过程能力指数 (Cp, Cpk, Pp, Ppk)
+- ✅ OOC/OOS自动检测
+- ✅ 100%测试覆盖
+
+### 2. 数据管理
+- ✅ 21个业务实体模型
+- ✅ 工厂层级管理 (Site → Area → Equipment → Chamber)
+- ✅ 物料跟踪 (Lot → Wafer)
+- ✅ 工艺管理 (Technology → Product → ProcessStep → Recipe)
+- ✅ 参数与规格版本化管理
+- ✅ 控制图配置管理
+
+### 3. 实时监控
+- ✅ RESTful数据采集API
+- ✅ 实时OOC/OOS检测
+- ✅ 多级告警 (INFO/WARN/CRIT)
+- ✅ 告警确认与关闭
+- ✅ 告警统计分析
+- ✅ OCAP执行跟踪
+
+### 4. 分析报表
+- ✅ 控制图可视化
+- ✅ 过程能力分析
+- ✅ 趋势分析
+- ✅ 设备/参数TOP分析
+- ✅ Dashboard总览
+
+## 快速开始
+
+### 环境要求
+```
+- Go >= 1.22
+- Node.js >= 18.16.0
+- MySQL 8.0 / MariaDB 10.5+
+```
+
+### 1. 数据库初始化
+
+创建数据库：
+```sql
+CREATE DATABASE gva CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+```
+
+### 2. 后端启动
+
+```bash
+# 进入后端目录
+cd server
+
+# 安装依赖
+go mod download
+
+# 修改配置
+# 编辑 config.yaml，设置数据库连接信息
+
+# 运行
+go run .
+```
+
+首次运行时访问 `http://localhost:8888/#/init` 进行系统初始化，按提示配置数据库和管理员账户。
+
+### 3. 加载演示数据
+
+系统首次启动时会自动加载SPC演示数据（FAB1），包括：
+- 厂区和区域
+- 设备（LITHO-01, ETCH-01, CD-SEM-01）
+- 产品（DEV-28N, 28nm技术）
+- 参数和规格（GATE_CD, OXIDE_THK）
+- 控制图配置
+- 50个演示样本点（含正常和异常数据）
+
+### 4. 前端启动
+
+```bash
+# 进入前端目录
+cd web
+
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run serve
+```
+
+访问: `http://localhost:8080`
+
+默认账户: `admin` / `123456`
+
+### 5. API文档
+
+启动后端后访问Swagger文档：
+```
+http://localhost:8888/swagger/index.html
+```
+
+## 项目结构
+
+```
+.
+├── server/              # 后端代码
+│   ├── api/v1/spc/     # SPC API处理器
+│   ├── model/spc/      # SPC数据模型
+│   ├── service/spc/    # SPC业务逻辑
+│   │   └── engine/     # SPC计算引擎
+│   ├── router/spc/     # SPC路由
+│   └── source/         # 初始化数据
+├── web/                 # 前端代码
+│   └── src/
+│       ├── api/spc/    # SPC API调用
+│       └── view/spc/   # SPC页面
+└── docs/
+    └── spc/            # SPC文档
+        ├── 00-conventions.md  # 开发约定
+        ├── 01-domain.md       # 领域模型
+        ├── 02-api.md          # API文档
+        └── 03-spc-rules.md    # SPC规则和计算
+
+```
+
+## 数据采集示例
+
+### cURL
+```bash
+curl -X POST http://localhost:8888/api/spc/collect \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chartCode": "CHART_GATE_CD",
+    "lotId": "LOT001",
+    "equipmentId": 1,
+    "sampleTime": "2026-08-27T10:30:00Z",
+    "subgroupNo": 101,
+    "values": [45.2, 45.5, 44.8, 45.1, 45.3]
+  }'
+```
+
+### 响应示例
+```json
+{
+  "code": 0,
+  "data": {
+    "sampleId": 123,
+    "oocFlag": false,
+    "oosFlag": false,
+    "violations": [],
+    "alarms": [],
+    "message": "数据采集成功"
+  }
+}
+```
+
+## 测试
+
+### 后端测试
+```bash
+# SPC引擎测试
+cd server
+go test -v ./service/spc/engine/...
+
+# 所有测试
+go test -v ./...
+```
+
+测试覆盖:
+- ✅ 控制图常数计算
+- ✅ 控制限计算 (I-MR, X̄-R, X̄-S)
+- ✅ OOS检测
+- ✅ OOC规则检测 (WE1-WE4, NELSON1-NELSON8)
+- ✅ 过程能力计算 (Cp/Cpk/Pp/Ppk)
+
+## 文档
+
+- [开发约定](docs/spc/00-conventions.md) - 命名规范、代码组织、API约定
+- [领域模型](docs/spc/01-domain.md) - 实体定义、关系图、数据流
+- [API文档](docs/spc/02-api.md) - 接口规范、请求/响应示例
+- [SPC规则](docs/spc/03-spc-rules.md) - 控制图类型、检测规则、能力分析
+
+## 许可证
+
+本项目基于 **Apache License 2.0** 许可。
+
+### 第三方组件
+
+- **gin-vue-admin v2.9.1** - Apache-2.0 License
+  - 来源: https://github.com/flipped-aurora/gin-vue-admin/releases/tag/v2.9.1
+  - 版权: © 2020-2026 flipped-aurora
+  - 说明: 保留GVA所有版权声明和许可信息
+
+### 版权声明
+
+```
+Copyright 2026 Asuka-00
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+---
+
+## 贡献者
+
+- **Asuka-00** - 项目维护者
+  - GitHub: https://github.com/Asuka-00
+  - 专注: SECS/HSMS, 半导体制造自动化
+
+## 致谢
+
+感谢 [gin-vue-admin](https://github.com/flipped-aurora/gin-vue-admin) 项目提供的优秀基础框架。
+
 
 ## 支持claw生态
 

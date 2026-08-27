@@ -5,6 +5,7 @@ import (
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/example"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/system"
 
 	"go.uber.org/zap"
@@ -71,6 +72,28 @@ func RegisterTables() {
 		example.ExaFileChunk{},
 		example.ExaFileUploadAndDownload{},
 		example.ExaAttachmentCategory{},
+
+		spc.SpcSite{},
+		spc.SpcArea{},
+		spc.SpcEquipment{},
+		spc.SpcChamber{},
+		spc.SpcTechnology{},
+		spc.SpcProduct{},
+		spc.SpcProcessStep{},
+		spc.SpcRecipe{},
+		spc.SpcLot{},
+		spc.SpcWafer{},
+		spc.SpcParameter{},
+		spc.SpcSpec{},
+		spc.SpcChart{},
+		spc.SpcControlLimit{},
+		spc.SpcRule{},
+		spc.SpcSample{},
+		spc.SpcMeasurement{},
+		spc.SpcAlarm{},
+		spc.SpcOcap{},
+		spc.SpcOcapExecution{},
+		spc.SpcCapability{},
 	)
 	if err != nil {
 		global.GVA_LOG.Error("register table failed", zap.Error(err))

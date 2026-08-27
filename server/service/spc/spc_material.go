@@ -1,6 +1,8 @@
 package spc
 
 import (
+	"errors"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
@@ -86,10 +88,39 @@ func (s *WaferService) GetSpcWaferList(info request.PageInfo, lotID uint) (list 
 type ParameterService struct{}
 
 func (s *ParameterService) CreateSpcParameter(param *spc.SpcParameter) error {
+	// 验证代码唯一性
+	var count int64
+	err := global.GVA_DB.Model(&spc.SpcParameter{}).Where("code = ? AND deleted_at IS NULL", param.Code).Count(&count).Error
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("代码已存在")
+	}
 	return global.GVA_DB.Create(param).Error
 }
 
 func (s *ParameterService) DeleteSpcParameter(id uint) error {
+	// 检查是否有关联的Spec
+	var specCount int64
+	err := global.GVA_DB.Model(&spc.SpcSpec{}).Where("parameter_id = ?", id).Count(&specCount).Error
+	if err != nil {
+		return err
+	}
+	if specCount > 0 {
+		return errors.New("存在关联数据，无法删除")
+	}
+	
+	// 检查是否有关联的Chart
+	var chartCount int64
+	err = global.GVA_DB.Model(&spc.SpcChart{}).Where("parameter_id = ?", id).Count(&chartCount).Error
+	if err != nil {
+		return err
+	}
+	if chartCount > 0 {
+		return errors.New("存在关联数据，无法删除")
+	}
+	
 	return global.GVA_DB.Delete(&spc.SpcParameter{}, id).Error
 }
 
@@ -119,14 +150,51 @@ func (s *ParameterService) GetSpcParameterList(info request.PageInfo) (list []sp
 type SpecService struct{}
 
 func (s *SpecService) CreateSpcSpec(spec *spc.SpcSpec) error {
+	// 验证规格限制: USL > LSL
+	if spec.USL != nil && spec.LSL != nil && *spec.USL <= *spec.LSL {
+		return errors.New("规格上限必须大于下限")
+	}
+	
+	// 验证目标值在规格范围内
+	if spec.Target != nil {
+		if spec.USL != nil && *spec.Target > *spec.USL {
+			return errors.New("目标值必须在规格范围内")
+		}
+		if spec.LSL != nil && *spec.Target < *spec.LSL {
+			return errors.New("目标值必须在规格范围内")
+		}
+	}
+	
 	return global.GVA_DB.Create(spec).Error
 }
 
 func (s *SpecService) DeleteSpcSpec(id uint) error {
+	// 检查是否有Chart引用此Spec
+	var chartCount int64
+	err := global.GVA_DB.Model(&spc.SpcChart{}).Where("spec_id = ?", id).Count(&chartCount).Error
+	if err != nil {
+		return err
+	}
+	if chartCount > 0 {
+		return errors.New("存在关联数据，无法删除")
+	}
+	
 	return global.GVA_DB.Delete(&spc.SpcSpec{}, id).Error
 }
 
 func (s *SpecService) UpdateSpcSpec(spec *spc.SpcSpec) error {
+	// 同样的验证逻辑
+	if spec.USL != nil && spec.LSL != nil && *spec.USL <= *spec.LSL {
+		return errors.New("规格上限必须大于下限")
+	}
+	if spec.Target != nil {
+		if spec.USL != nil && *spec.Target > *spec.USL {
+			return errors.New("目标值必须在规格范围内")
+		}
+		if spec.LSL != nil && *spec.Target < *spec.LSL {
+			return errors.New("目标值必须在规格范围内")
+		}
+	}
 	return global.GVA_DB.Save(spec).Error
 }
 

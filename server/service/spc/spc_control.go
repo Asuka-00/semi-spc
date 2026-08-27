@@ -1,6 +1,8 @@
 package spc
 
 import (
+	"errors"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
@@ -9,6 +11,25 @@ import (
 type ControlLimitService struct{}
 
 func (s *ControlLimitService) CreateSpcControlLimit(limit *spc.SpcControlLimit) error {
+	// 验证控制限顺序: UCL > CL > LCL
+	if limit.UCL != nil && limit.CL != nil && *limit.UCL <= *limit.CL {
+		return errors.New("上控制限必须大于中心线")
+	}
+	if limit.CL != nil && limit.LCL != nil && *limit.CL <= *limit.LCL {
+		return errors.New("中心线必须大于下控制限")
+	}
+	if limit.UCL != nil && limit.LCL != nil && *limit.UCL <= *limit.LCL {
+		return errors.New("上控制限必须大于下控制限")
+	}
+	
+	// S图的控制限也需要验证
+	if limit.UCLS != nil && limit.CLS != nil && *limit.UCLS <= *limit.CLS {
+		return errors.New("S图上控制限必须大于中心线")
+	}
+	if limit.CLS != nil && limit.LCLS != nil && *limit.CLS <= *limit.LCLS {
+		return errors.New("S图中心线必须大于下控制限")
+	}
+	
 	return global.GVA_DB.Create(limit).Error
 }
 

@@ -53,6 +53,20 @@ func (s *CollectService) CollectData(req *CollectDataRequest) (*CollectDataRespo
 		return nil, errors.New("控制图未启用")
 	}
 
+	// 1.5 验证子组大小
+	if len(req.Values) != chart.SubgroupSize {
+		return nil, errors.New("测量值数量必须等于子组大小")
+	}
+
+	// 1.6 验证子组号唯一性
+	if req.SubgroupNo > 0 {
+		var existingCount int64
+		global.GVA_DB.Model(&spc.SpcSample{}).Where("chart_id = ? AND subgroup_no = ?", chart.ID, req.SubgroupNo).Count(&existingCount)
+		if existingCount > 0 {
+			return nil, errors.New("亚组号已存在")
+		}
+	}
+
 	// 2. 获取规格
 	var spec spc.SpcSpec
 	err = global.GVA_DB.Where("id = ?", chart.SpecID).First(&spec).Error

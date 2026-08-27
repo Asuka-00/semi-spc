@@ -1,6 +1,8 @@
 package spc
 
 import (
+	"errors"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
@@ -10,11 +12,29 @@ type SiteService struct{}
 
 // CreateSpcSite 创建厂区
 func (s *SiteService) CreateSpcSite(site *spc.SpcSite) error {
+	// 验证代码唯一性
+	var count int64
+	err := global.GVA_DB.Model(&spc.SpcSite{}).Where("code = ? AND deleted_at IS NULL", site.Code).Count(&count).Error
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("代码已存在")
+	}
 	return global.GVA_DB.Create(site).Error
 }
 
 // DeleteSpcSite 删除厂区
 func (s *SiteService) DeleteSpcSite(id uint) error {
+	// 检查是否有关联的Area
+	var areaCount int64
+	err := global.GVA_DB.Model(&spc.SpcArea{}).Where("site_id = ?", id).Count(&areaCount).Error
+	if err != nil {
+		return err
+	}
+	if areaCount > 0 {
+		return errors.New("存在关联数据，无法删除")
+	}
 	return global.GVA_DB.Delete(&spc.SpcSite{}, id).Error
 }
 

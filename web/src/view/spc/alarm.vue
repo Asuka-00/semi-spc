@@ -52,10 +52,11 @@
         <el-table-column label="创建时间" prop="CreatedAt" min-width="180">
           <template #default="scope">{{ formatDate(scope.row.CreatedAt) }}</template>
         </el-table-column>
-        <el-table-column label="操作" fixed="right" min-width="200">
+        <el-table-column label="操作" fixed="right" min-width="250">
           <template #default="scope">
             <el-button v-if="scope.row.status === 'OPEN'" type="warning" link icon="check" @click="ackAlarm(scope.row)">确认</el-button>
             <el-button v-if="scope.row.status !== 'CLOSED'" type="success" link icon="close" @click="closeAlarm(scope.row)">关闭</el-button>
+            <el-button v-if="scope.row.status !== 'CLOSED'" type="primary" link icon="document" @click="startOcap(scope.row)">启动OCAP</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -81,13 +82,42 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 启动OCAP对话框 -->
+    <el-dialog v-model="ocapDialogVisible" title="启动OCAP" width="50%">
+      <el-form :model="ocapForm" label-width="120px">
+        <el-form-item label="OCAP模板">
+          <el-select v-model="ocapForm.ocapId" placeholder="选择OCAP模板" style="width: 100%">
+            <el-option
+              v-for="ocap in ocapList"
+              :key="ocap.ID"
+              :label="`${ocap.code} - ${ocap.name}`"
+              :value="ocap.ID"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="执行人">
+          <el-input v-model="ocapForm.assignee" placeholder="请输入执行人" />
+        </el-form-item>
+        <el-form-item label="说明">
+          <el-input v-model="ocapForm.remark" type="textarea" :rows="3" placeholder="请输入说明" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="ocapDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmStartOcap">启动</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getAlarmList, acknowledgeAlarm, closeAlarm as closeAlarmApi } from '@/api/spc/collect'
+import { getOcapList, startOcap as startOcapApi } from '@/api/spc/ocap'
 import { formatDate } from '@/utils/format'
 
 const page = ref(1)
@@ -102,6 +132,25 @@ const remarkText = ref('')
 let currentAlarm = null
 let currentAction = ''
 
+const ocapDialogVisible = ref(false)
+const ocapList = ref([])
+const ocapForm = reactive({
+  ocapId: null,
+  assignee: '',
+  remark: ''
+})
+
+const loadOcapList = async () => {
+  try {
+    const res = await getOcapList({ page: 1, pageSize: 100 })
+    if (res.code === 0) {
+      ocapList.value = res.data.list || []
+    }
+  } catch (error) {
+    ElMessage.error('加载OCAP模板失败')
+  }
+}
+
 const getTableData = async() => {
   const table = await getAlarmList({ page: page.value, pageSize: pageSize.value, ...searchInfo })
   if (table.code === 0) {
@@ -112,7 +161,10 @@ const getTableData = async() => {
   }
 }
 
-getTableData()
+onMounted(() => {
+  getTableData()
+  loadOcapList()
+})
 
 const onSubmit = () => {
   page.value = 1
@@ -151,6 +203,14 @@ const closeAlarm = (row) => {
   remarkDialogVisible.value = true
 }
 
+const startOcap = (row) => {
+  currentAlarm = row
+  ocapForm.ocapId = null
+  ocapForm.assignee = ''
+  ocapForm.remark = `告警ID: ${row.ID}, 类型: ${row.alarmType}`
+  ocapDialogVisible.value = true
+}
+
 const confirmRemark = async() => {
   if (!currentAlarm) return
   
@@ -170,6 +230,31 @@ const confirmRemark = async() => {
     })
     remarkDialogVisible.value = false
     getTableData()
+  }
+}
+
+const confirmStartOcap = async () => {
+  if (!ocapForm.ocapId) {
+    ElMessage.error('请选择OCAP模板')
+    return
+  }
+  
+  try {
+    const data = {
+      alarmId: currentAlarm.ID,
+      ocapId: ocapForm.ocapId,
+      assignee: ocapForm.assignee,
+      remark: ocapForm.remark
+    }
+    
+    const res = await startOcapApi(data)
+    if (res.code === 0) {
+      ElMessage.success('OCAP启动成功')
+      ocapDialogVisible.value = false
+      getTableData()
+    }
+  } catch (error) {
+    ElMessage.error(error.message || 'OCAP启动失败')
   }
 }
 </script>

@@ -21,7 +21,7 @@ func SpcCollectAuth() gin.HandlerFunc {
 			claims, err := j.ParseToken(token)
 			if err == nil {
 				// JWT有效，检查是否在黑名单
-				if jwtService.IsBlacklist(token) {
+				if isBlacklist(token) {
 					response.FailWithDetailed(gin.H{"reload": true}, "您的Token已被注销，请重新登录", c)
 					c.Abort()
 					return

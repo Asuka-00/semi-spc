@@ -6,7 +6,6 @@ import (
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
-	"github.com/flipped-aurora/gin-vue-admin/server/service/spc"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,10 +16,10 @@ func TestCollectIdempotency(t *testing.T) {
 		t.Skip("数据库未配置")
 	}
 
-	service := &spc.CollectService{}
+	service := &CollectService{}
 	idempKey := "test-idempotency-key-" + time.Now().Format("20060102150405")
 	
-	req := &spc.CollectDataRequest{
+	req := &CollectDataRequest{
 		ChartCode:      "TEST_CHART_001",
 		SampleTime:     time.Now(),
 		Values:         []float64{1.0, 2.0, 3.0, 4.0, 5.0},
@@ -54,14 +53,14 @@ func TestHoldCommentRequired(t *testing.T) {
 		t.Skip("数据库未配置")
 	}
 
-	service := &spc.LotService{}
+	service := &LotService{}
 	
 	// 创建测试批次
 	testLot := &spc.SpcLot{
 		LotID:      "TEST_LOT_" + time.Now().Format("20060102150405"),
 		SiteID:     1,
 		ProductID:  1,
-		WaferCount: 25,
+		Qty:        25,
 		Status:     "RELEASED",
 	}
 	
@@ -84,7 +83,7 @@ func TestChamberDeleteGuard(t *testing.T) {
 		t.Skip("数据库未配置")
 	}
 
-	service := &spc.ChamberService{}
+	service := &ChamberService{}
 	
 	// 创建测试腔室
 	testChamber := &spc.SpcChamber{

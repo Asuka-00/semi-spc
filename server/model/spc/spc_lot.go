@@ -12,7 +12,7 @@ type SpcLot struct {
 	LotID     string `json:"lotId" gorm:"type:varchar(100);not null;uniqueIndex:idx_spc_lot_lotid;comment:批次号"`
 	LotType   string `json:"lotType" gorm:"type:varchar(20);comment:批次类型 PROD/ENG/PILOT"`
 	Qty       int    `json:"qty" gorm:"default:25;comment:片数"`
-	Status    int8   `json:"status" gorm:"type:tinyint;default:1;comment:状态 0=禁用 1=启用"`
+	Status    string `json:"status" gorm:"type:varchar(20);default:'RELEASED';comment:状态 RELEASED/HELD"`
 	Remark    string `json:"remark" gorm:"type:varchar(500);comment:备注"`
 
 	Site    *SpcSite    `json:"site,omitempty" gorm:"foreignKey:SiteID"`

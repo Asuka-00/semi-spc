@@ -87,7 +87,7 @@ func TestSpecValidationUSLGreaterThanLSL(t *testing.T) {
 		Code:          "TEST_PARAM",
 		Name:          "测试参数",
 		DataType:      "VARIABLE",
-		UnitOfMeasure: "nm",
+		Unit: "nm",
 		DecimalPlaces: 2,
 		Status:        1,
 	}
@@ -122,7 +122,7 @@ func TestChartTypeDataTypeMismatch(t *testing.T) {
 		Code:          "TEST_PARAM_ATTR",
 		Name:          "测试属性参数",
 		DataType:      "ATTRIBUTE",
-		UnitOfMeasure: "defects",
+		Unit: "defects",
 		DecimalPlaces: 0,
 		Status:        1,
 	}
@@ -158,7 +158,7 @@ func TestSubgroupSizeValidation(t *testing.T) {
 		Code:          "TEST_PARAM_VAR",
 		Name:          "测试变量参数",
 		DataType:      "VARIABLE",
-		UnitOfMeasure: "nm",
+		Unit: "nm",
 		DecimalPlaces: 2,
 		Status:        1,
 	}
@@ -181,11 +181,11 @@ func TestSubgroupSizeValidation(t *testing.T) {
 
 	// 尝试采集错误数量的测量值
 	now := time.Now()
-	collectReq := &spc.CollectDataRequest{
+	collectReq := &CollectDataRequest{
 		ChartCode:  "TEST_CHART_SIZE",
-		LotID:      "LOT001",
+		LotID:      &lotID,
 		Values:     []float64{100.0, 101.0, 102.0}, // 只有3个值，期望5个
-		SampleTime: &now,
+		SampleTime: now,
 	}
 	_, err = collectService.CollectData(collectReq)
 	assert.Error(t, err)

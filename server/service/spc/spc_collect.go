@@ -171,7 +171,7 @@ func (s *CollectService) CollectData(req *CollectDataRequest) (*CollectDataRespo
 		violations := []engine.RuleViolation{}
 		alarmIDs := []uint{}
 
-		if controlLimit != nil && controlLimit.ID > 0 {
+		if controlLimit.ID > 0 {
 			// 获取最近的样本用于规则检测
 			var recentSamples []spc.SpcSample
 			err = tx.Where("chart_id = ?", chart.ID).

@@ -54,7 +54,7 @@ func (a *ChartApi) DeleteSpcChart(c *gin.Context) {
 		return
 	}
 
-	err = chartService.DeleteSpcChart(idReq.ID)
+	err = chartService.DeleteSpcChart(uint(idReq.ID))
 	if err != nil {
 		global.GVA_LOG.Error("删除失败!", zap.Error(err))
 		response.FailWithMessage("删除失败", c)
@@ -106,7 +106,7 @@ func (a *ChartApi) FindSpcChart(c *gin.Context) {
 		return
 	}
 
-	chart, err := chartService.GetSpcChart(idReq.ID)
+	chart, err := chartService.GetSpcChart(uint(idReq.ID))
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败", c)

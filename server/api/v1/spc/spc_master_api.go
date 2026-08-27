@@ -56,7 +56,7 @@ func (a *AreaApi) DeleteSpcArea(c *gin.Context) {
 		return
 	}
 
-	err = areaService.DeleteSpcArea(idReq.ID)
+	err = areaService.DeleteSpcArea(uint(idReq.ID))
 	if err != nil {
 		global.GVA_LOG.Error("删除失败!", zap.Error(err))
 		response.FailWithMessage("删除失败", c)
@@ -108,7 +108,7 @@ func (a *AreaApi) FindSpcArea(c *gin.Context) {
 		return
 	}
 
-	area, err := areaService.GetSpcArea(idReq.ID)
+	area, err := areaService.GetSpcArea(uint(idReq.ID))
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败", c)
@@ -197,7 +197,7 @@ func (a *EquipmentApi) DeleteSpcEquipment(c *gin.Context) {
 		return
 	}
 
-	err = equipmentService.DeleteSpcEquipment(idReq.ID)
+	err = equipmentService.DeleteSpcEquipment(uint(idReq.ID))
 	if err != nil {
 		global.GVA_LOG.Error("删除失败!", zap.Error(err))
 		response.FailWithMessage("删除失败", c)
@@ -249,7 +249,7 @@ func (a *EquipmentApi) FindSpcEquipment(c *gin.Context) {
 		return
 	}
 
-	equipment, err := equipmentService.GetSpcEquipment(idReq.ID)
+	equipment, err := equipmentService.GetSpcEquipment(uint(idReq.ID))
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败", c)

@@ -67,7 +67,7 @@ func (a *AlarmApi) AcknowledgeAlarm(c *gin.Context) {
 	}
 
 	remark := c.Query("remark")
-	err = alarmService.AcknowledgeAlarm(req.ID, remark)
+	err = alarmService.AcknowledgeAlarm(uint(req.ID), remark)
 	if err != nil {
 		global.GVA_LOG.Error("确认失败!", zap.Error(err))
 		response.FailWithMessage("确认失败", c)
@@ -94,7 +94,7 @@ func (a *AlarmApi) CloseAlarm(c *gin.Context) {
 	}
 
 	remark := c.Query("remark")
-	err = alarmService.CloseAlarm(req.ID, remark)
+	err = alarmService.CloseAlarm(uint(uint(req.ID)), remark)
 	if err != nil {
 		global.GVA_LOG.Error("关闭失败!", zap.Error(err))
 		response.FailWithMessage("关闭失败", c)

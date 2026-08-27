@@ -54,7 +54,7 @@ func (a *SiteApi) DeleteSpcSite(c *gin.Context) {
 		return
 	}
 
-	err = siteService.DeleteSpcSite(idReq.ID)
+	err = siteService.DeleteSpcSite(uint(idReq.ID))
 	if err != nil {
 		global.GVA_LOG.Error("删除失败!", zap.Error(err))
 		response.FailWithMessage("删除失败", c)
@@ -106,7 +106,7 @@ func (a *SiteApi) GetSpcSite(c *gin.Context) {
 		return
 	}
 
-	site, err := siteService.GetSpcSite(idReq.ID)
+	site, err := siteService.GetSpcSite(uint(idReq.ID))
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败", c)

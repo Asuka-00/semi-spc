@@ -46,13 +46,23 @@
           <el-input v-model="form.code" placeholder="请输入批次号" />
         </el-form-item>
         <el-form-item label="厂区">
-          <el-select v-model="form.siteId" placeholder="请选择厂区">
-            <el-option label="FAB1" :value="1" />
+          <el-select v-model="form.siteId" placeholder="请选择厂区" clearable>
+            <el-option
+              v-for="site in siteList"
+              :key="site.ID"
+              :label="site.name"
+              :value="site.ID"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="产品">
-          <el-select v-model="form.productId" placeholder="请选择产品">
-            <el-option label="产品A" :value="1" />
+          <el-select v-model="form.productId" placeholder="请选择产品" clearable>
+            <el-option
+              v-for="product in productList"
+              :key="product.ID"
+              :label="product.name"
+              :value="product.ID"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="晶圆数">
@@ -137,14 +147,19 @@ import {
   getWaferList,
   createWafer,
   updateWafer,
-  deleteWafer as apiDeleteWafer
+  deleteWafer as apiDeleteWafer,
+  getProductList
 } from '@/api/spc/material'
+import { getSiteList } from '@/api/spc/master'
 
 const loading = ref(false)
 const tableData = ref([])
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+
+const siteList = ref([])
+const productList = ref([])
 
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增批次')
@@ -278,8 +293,32 @@ const handleSizeChange = (val) => {
   getList()
 }
 
+const loadSites = async () => {
+  try {
+    const res = await getSiteList({ page: 1, pageSize: 100, status: 1 })
+    if (res.code === 0) {
+      siteList.value = res.data.list || []
+    }
+  } catch (error) {
+    console.error('加载厂区失败', error)
+  }
+}
+
+const loadProducts = async () => {
+  try {
+    const res = await getProductList({ page: 1, pageSize: 100, status: 1 })
+    if (res.code === 0) {
+      productList.value = res.data.list || []
+    }
+  } catch (error) {
+    console.error('加载产品失败', error)
+  }
+}
+
 onMounted(() => {
   getList()
+  loadSites()
+  loadProducts()
 })
 
 // Wafer管理

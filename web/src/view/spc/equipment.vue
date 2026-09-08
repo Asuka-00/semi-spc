@@ -24,7 +24,7 @@
           <el-table-column :label="$t('common.code')" prop="code" min-width="120" />
           <el-table-column :label="$t('common.name')" prop="name" min-width="150" />
           <el-table-column :label="$t('spc.equipment.type')" min-width="110">
-            <template #default="{ row }">{{ $t(`spc.option.eqpType.${row.eqpType}`, row.eqpType) }}</template>
+            <template #default="{ row }">{{ $t(`spc.option.eqpType.${row.eqpType}`) }}</template>
           </el-table-column>
           <el-table-column :label="$t('spc.equipment.area')" min-width="120"><template #default="{ row }">{{ row.area?.name || '-' }}</template></el-table-column>
           <el-table-column :label="$t('spc.equipment.vendor')" prop="vendor" min-width="120" />

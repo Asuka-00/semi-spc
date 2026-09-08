@@ -41,7 +41,7 @@
         <el-table :data="overview.recentAlarms || []" size="large" class="spc-table-wrap">
           <el-table-column :label="$t('common.type')" width="100">
             <template #default="{ row }">
-              <el-tag :type="alarmTypeTag(row.alarmType)" effect="light" round>{{ $t(`spc.option.alarmType.${row.alarmType}`, row.alarmType) }}</el-tag>
+              <el-tag :type="alarmTypeTag(row.alarmType)" effect="light" round>{{ $t(`spc.option.alarmType.${row.alarmType}`) }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column :label="$t('spc.dashboard.chart')" min-width="140">

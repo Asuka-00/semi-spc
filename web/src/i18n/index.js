@@ -24,11 +24,19 @@ export const i18n = createI18n({
   legacy: false,
   globalInjection: true,
   locale: readLocale(),
-  fallbackLocale: DEFAULT_LOCALE,
+  fallbackLocale: {
+    zh: ['zh-CN'],
+    en: ['en-US'],
+    ja: ['ja-JP'],
+    default: [DEFAULT_LOCALE]
+  },
   messages: {
     'zh-CN': zhCN,
+    zh: zhCN,
     'en-US': enUS,
-    'ja-JP': jaJP
+    en: enUS,
+    'ja-JP': jaJP,
+    ja: jaJP
   }
 })
 

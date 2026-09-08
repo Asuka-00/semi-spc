@@ -16,7 +16,7 @@
         <el-table v-loading="chart.loading" :data="chart.tableData" row-key="ID">
           <el-table-column :label="$t('common.code')" prop="code" min-width="120" />
           <el-table-column :label="$t('common.name')" prop="name" min-width="150" />
-          <el-table-column :label="$t('spc.chart.chartType')" min-width="130"><template #default="{ row }">{{ $t(`spc.option.chartType.${row.chartType}`, row.chartType) }}</template></el-table-column>
+          <el-table-column :label="$t('spc.chart.chartType')" min-width="130"><template #default="{ row }">{{ $t(`spc.option.chartType.${row.chartType}`) }}</template></el-table-column>
           <el-table-column :label="$t('spc.chart.parameter')" min-width="120"><template #default="{ row }">{{ row.parameter?.name || row.parameterId }}</template></el-table-column>
           <el-table-column :label="$t('spc.chart.subgroup')" prop="subgroupSize" width="100" />
           <el-table-column :label="$t('common.status')" width="90"><template #default="{ row }"><el-tag :type="statusTag(row.status)" round>{{ statusText(row.status, t) }}</el-tag></template></el-table-column>
@@ -49,7 +49,7 @@
           <el-table-column label="CL" width="100"><template #default="{ row }">{{ num(row.cl) }}</template></el-table-column>
           <el-table-column label="LCL" width="100"><template #default="{ row }">{{ num(row.lcl) }}</template></el-table-column>
           <el-table-column label="UCL-S" width="100"><template #default="{ row }">{{ num(row.uclS) }}</template></el-table-column>
-          <el-table-column :label="$t('spc.chart.source')" width="110"><template #default="{ row }">{{ $t(`spc.option.limitSource.${row.source}`, row.source) }}</template></el-table-column>
+          <el-table-column :label="$t('spc.chart.source')" width="110"><template #default="{ row }">{{ $t(`spc.option.limitSource.${row.source}`) }}</template></el-table-column>
           <el-table-column :label="$t('spc.chart.calcN')" prop="calcN" width="110" />
           <el-table-column :label="$t('common.action')" width="160"><template #default="{ row }"><el-button type="primary" link @click="openLimit('edit', row)">{{ $t('common.edit') }}</el-button><el-button type="danger" link @click="limit.deleteRow(row, $t('spc.chart.tabLimit'))">{{ $t('common.delete') }}</el-button></template></el-table-column>
         </el-table>

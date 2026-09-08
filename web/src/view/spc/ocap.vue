@@ -7,7 +7,7 @@
         <el-table v-loading="plan.loading" :data="plan.tableData" row-key="ID" :empty-text="$t('common.noData')">
           <el-table-column :label="$t('spc.ocap.planName')" prop="name" min-width="160" />
           <el-table-column :label="$t('spc.chart.tabChart')" min-width="140"><template #default="{ row }">{{ row.chart?.name || row.chartId }}</template></el-table-column>
-          <el-table-column :label="$t('spc.ocap.trigger')" width="120"><template #default="{ row }">{{ $t(`spc.option.trigger.${row.triggerType}`, row.triggerType) }}</template></el-table-column>
+          <el-table-column :label="$t('spc.ocap.trigger')" width="120"><template #default="{ row }">{{ $t(`spc.option.trigger.${row.triggerType}`) }}</template></el-table-column>
           <el-table-column :label="$t('common.status')" width="90"><template #default="{ row }"><el-tag :type="statusTag(row.status)" round>{{ statusText(row.status, t) }}</el-tag></template></el-table-column>
           <el-table-column :label="$t('common.action')" width="160"><template #default="{ row }"><el-button type="primary" link @click="openPlan('edit', row)">{{ $t('common.edit') }}</el-button><el-button type="danger" link @click="plan.deleteRow(row, $t('spc.ocap.plan'))">{{ $t('common.delete') }}</el-button></template></el-table-column>
         </el-table>
@@ -19,7 +19,7 @@
           <el-table-column :label="$t('spc.ocap.plan')" min-width="140"><template #default="{ row }">{{ row.ocap?.name || row.ocapId }}</template></el-table-column>
           <el-table-column :label="$t('spc.ocap.alarm')" prop="alarmId" width="90" />
           <el-table-column :label="$t('spc.ocap.owner')" prop="owner" width="120" />
-          <el-table-column :label="$t('common.status')" width="120"><template #default="{ row }">{{ $t(`spc.option.ocapStatus.${row.status}`, row.status) }}</template></el-table-column>
+          <el-table-column :label="$t('common.status')" width="120"><template #default="{ row }">{{ $t(`spc.option.ocapStatus.${row.status}`) }}</template></el-table-column>
           <el-table-column :label="$t('spc.ocap.startedAt')" min-width="160"><template #default="{ row }">{{ formatDate(row.startedAt) }}</template></el-table-column>
           <el-table-column :label="$t('common.action')" width="200">
             <template #default="{ row }">

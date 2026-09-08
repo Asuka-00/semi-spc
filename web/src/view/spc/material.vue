@@ -6,7 +6,7 @@
         <div class="gva-btn-list"><el-button type="primary" icon="plus" @click="openLot('add')">{{ $t('spc.material.addLot') }}</el-button></div>
         <el-table v-loading="lot.loading" :data="lot.tableData" row-key="ID">
           <el-table-column :label="$t('spc.material.lotId')" prop="lotId" min-width="140" />
-          <el-table-column :label="$t('spc.material.lotType')" width="110"><template #default="{ row }">{{ $t(`spc.option.lotType.${row.lotType}`, row.lotType) }}</template></el-table-column>
+          <el-table-column :label="$t('spc.material.lotType')" width="110"><template #default="{ row }">{{ $t(`spc.option.lotType.${row.lotType}`) }}</template></el-table-column>
           <el-table-column :label="$t('spc.material.product')"><template #default="{ row }">{{ row.product?.name || row.productId }}</template></el-table-column>
           <el-table-column :label="$t('spc.material.site')"><template #default="{ row }">{{ row.site?.name || row.siteId }}</template></el-table-column>
           <el-table-column :label="$t('spc.material.qty')" prop="qty" width="80" />

@@ -8,8 +8,8 @@
           <el-table-column :label="$t('common.code')" prop="code" min-width="120" />
           <el-table-column :label="$t('common.name')" prop="name" min-width="150" />
           <el-table-column :label="$t('spc.parameter.unit')" prop="unit" width="90" />
-          <el-table-column :label="$t('spc.parameter.dataType')" min-width="110"><template #default="{ row }">{{ $t(`spc.option.dataType.${row.dataType}`, row.dataType) }}</template></el-table-column>
-          <el-table-column :label="$t('spc.parameter.sampleLevel')" min-width="110"><template #default="{ row }">{{ $t(`spc.option.sampleLevel.${row.sampleLevel}`, row.sampleLevel) }}</template></el-table-column>
+          <el-table-column :label="$t('spc.parameter.dataType')" min-width="110"><template #default="{ row }">{{ $t(`spc.option.dataType.${row.dataType}`) }}</template></el-table-column>
+          <el-table-column :label="$t('spc.parameter.sampleLevel')" min-width="110"><template #default="{ row }">{{ $t(`spc.option.sampleLevel.${row.sampleLevel}`) }}</template></el-table-column>
           <el-table-column :label="$t('common.status')" width="90"><template #default="{ row }"><el-tag :type="statusTag(row.status)" round>{{ statusText(row.status, t) }}</el-tag></template></el-table-column>
           <el-table-column :label="$t('common.action')" width="160"><template #default="{ row }"><el-button type="primary" link @click="openParam('edit', row)">{{ $t('common.edit') }}</el-button><el-button type="danger" link @click="param.deleteRow(row, $t('spc.parameter.paramTab'))">{{ $t('common.delete') }}</el-button></template></el-table-column>
         </el-table>

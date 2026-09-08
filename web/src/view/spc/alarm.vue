@@ -24,10 +24,10 @@
       </div>
       <el-table v-loading="loading" :data="tableData" row-key="ID" :empty-text="$t('spc.alarm.empty')">
         <el-table-column :label="$t('spc.alarm.type')" width="110">
-          <template #default="{ row }"><el-tag :type="alarmTypeTag(row.alarmType)" round>{{ $t(`spc.option.alarmType.${row.alarmType}`, row.alarmType) }}</el-tag></template>
+          <template #default="{ row }"><el-tag :type="alarmTypeTag(row.alarmType)" round>{{ $t(`spc.option.alarmType.${row.alarmType}`) }}</el-tag></template>
         </el-table-column>
         <el-table-column :label="$t('spc.alarm.severity')" width="100">
-          <template #default="{ row }"><el-tag :type="severityTag(row.severity)" round>{{ $t(`spc.option.severity.${row.severity}`, row.severity) }}</el-tag></template>
+          <template #default="{ row }"><el-tag :type="severityTag(row.severity)" round>{{ $t(`spc.option.severity.${row.severity}`) }}</el-tag></template>
         </el-table-column>
         <el-table-column :label="$t('spc.alarm.chart')" min-width="140"><template #default="{ row }">{{ row.chart?.name || row.chartId }}</template></el-table-column>
         <el-table-column :label="$t('spc.alarm.rule')" prop="ruleCode" width="110" />

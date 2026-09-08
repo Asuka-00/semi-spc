@@ -17,17 +17,20 @@ import clickOutSide from '@/directive/clickOutSide'
 import { store } from '@/pinia'
 import App from './App.vue'
 import '@/core/error-handel'
+import { i18n, readLocale } from '@/i18n'
 
 const app = createApp(App)
 
 app.config.productionTip = false
 
+const locale = readLocale()
 setupVueRootValidator(app, {
-    lang: 'zh'
+    lang: locale.startsWith('zh') ? 'zh' : locale.startsWith('ja') ? 'ja' : 'en'
   })
 
 app
   .use(run)
+  .use(i18n)
   .use(ElementPlus)
   .use(store)
   .use(auth)

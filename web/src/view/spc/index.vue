@@ -1,12 +1,9 @@
 <template>
-  <!-- SPC Index 主入口 -->
-  <div>
+  <div class="spc-page">
     <router-view />
   </div>
 </template>
 
 <script setup>
+import '@/style/spc.scss'
 </script>
-
-<style scoped>
-</style>

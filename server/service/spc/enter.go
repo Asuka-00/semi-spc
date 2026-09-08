@@ -23,4 +23,5 @@ type ServiceGroup struct {
 	OcapExecutionService
 	CapabilityService
 	CollectService
+	DashboardService
 }

@@ -56,7 +56,7 @@ func (a *AreaApi) DeleteSpcArea(c *gin.Context) {
 		return
 	}
 
-	err = areaService.DeleteSpcArea(idReq.ID)
+	err = areaService.DeleteSpcArea(idReq.Uint())
 	if err != nil {
 		global.GVA_LOG.Error("删除失败!", zap.Error(err))
 		response.FailWithMessage("删除失败", c)
@@ -108,7 +108,7 @@ func (a *AreaApi) FindSpcArea(c *gin.Context) {
 		return
 	}
 
-	area, err := areaService.GetSpcArea(idReq.ID)
+	area, err := areaService.GetSpcArea(idReq.Uint())
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败", c)
@@ -197,7 +197,7 @@ func (a *EquipmentApi) DeleteSpcEquipment(c *gin.Context) {
 		return
 	}
 
-	err = equipmentService.DeleteSpcEquipment(idReq.ID)
+	err = equipmentService.DeleteSpcEquipment(idReq.Uint())
 	if err != nil {
 		global.GVA_LOG.Error("删除失败!", zap.Error(err))
 		response.FailWithMessage("删除失败", c)
@@ -249,7 +249,7 @@ func (a *EquipmentApi) FindSpcEquipment(c *gin.Context) {
 		return
 	}
 
-	equipment, err := equipmentService.GetSpcEquipment(idReq.ID)
+	equipment, err := equipmentService.GetSpcEquipment(idReq.Uint())
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败", c)
@@ -270,19 +270,18 @@ func (a *EquipmentApi) FindSpcEquipment(c *gin.Context) {
 // @Success   200   {object}  response.Response{data=response.PageResult,msg=string}  "获取成功"
 // @Router    /spc/getEquipmentList [get]
 func (a *EquipmentApi) GetSpcEquipmentList(c *gin.Context) {
-	var pageInfo request.PageInfo
-	err := c.ShouldBindQuery(&pageInfo)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
+	pageInfo := parsePage(c)
+	siteID := parseUintQuery(c, "siteId")
+	areaID := parseUintQuery(c, "areaId")
+	if pageInfo.Keyword == "" {
+		if code := c.Query("code"); code != "" {
+			pageInfo.Keyword = code
+		} else if name := c.Query("name"); name != "" {
+			pageInfo.Keyword = name
+		}
 	}
 
-	siteIDStr := c.Query("siteId")
-	areaIDStr := c.Query("areaId")
-	siteID, _ := strconv.ParseUint(siteIDStr, 10, 32)
-	areaID, _ := strconv.ParseUint(areaIDStr, 10, 32)
-
-	list, total, err := equipmentService.GetSpcEquipmentList(pageInfo, uint(siteID), uint(areaID))
+	list, total, err := equipmentService.GetSpcEquipmentList(pageInfo, siteID, areaID)
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败", c)

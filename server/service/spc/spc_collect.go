@@ -28,18 +28,18 @@ type CollectDataRequest struct {
 
 // CollectDataResponse 数据采集响应
 type CollectDataResponse struct {
-	SampleID    uint                      `json:"sampleId"`
-	OocFlag     bool                      `json:"oocFlag"`
-	OosFlag     bool                      `json:"oosFlag"`
-	Violations  []engine.RuleViolation    `json:"violations,omitempty"`
-	Alarms      []uint                    `json:"alarms,omitempty"`
-	Message     string                    `json:"message"`
+	SampleID   uint                   `json:"sampleId"`
+	OocFlag    bool                   `json:"oocFlag"`
+	OosFlag    bool                   `json:"oosFlag"`
+	Violations []engine.RuleViolation `json:"violations,omitempty"`
+	Alarms     []uint                 `json:"alarms,omitempty"`
+	Message    string                 `json:"message"`
 }
 
 // CollectData 采集数据并进行SPC分析
 func (s *CollectService) CollectData(req *CollectDataRequest) (*CollectDataResponse, error) {
 	chartService := &ChartService{}
-	
+
 	// 1. 获取控制图配置
 	chart, err := chartService.GetSpcChartByCode(req.ChartCode)
 	if err != nil {
@@ -51,6 +51,18 @@ func (s *CollectService) CollectData(req *CollectDataRequest) (*CollectDataRespo
 
 	if chart.Status != 1 {
 		return nil, errors.New("控制图未启用")
+	}
+
+	if req.SampleTime.IsZero() {
+		req.SampleTime = time.Now()
+	}
+	if req.SubgroupNo <= 0 {
+		var last spc.SpcSample
+		if e := global.GVA_DB.Where("chart_id = ?", chart.ID).Order("subgroup_no DESC").First(&last).Error; e == nil {
+			req.SubgroupNo = last.SubgroupNo + 1
+		} else {
+			req.SubgroupNo = 1
+		}
 	}
 
 	// 2. 获取规格
@@ -105,7 +117,7 @@ func (s *CollectService) CollectData(req *CollectDataRequest) (*CollectDataRespo
 			sample.LotID = &lot.ID
 		}
 	}
-	
+
 	if req.WaferID != nil && *req.WaferID != "" {
 		var wafer spc.SpcWafer
 		err = global.GVA_DB.Where("wafer_id = ?", *req.WaferID).First(&wafer).Error
@@ -159,19 +171,26 @@ func (s *CollectService) CollectData(req *CollectDataRequest) (*CollectDataRespo
 
 			// 获取启用的规则
 			rules, _ := chartService.GetActiveRules(chart.ID)
-			enabledRules := []string{}
+			configs := make([]engine.RuleConfig, 0, len(rules))
 			for _, r := range rules {
-				enabledRules = append(enabledRules, r.RuleCode)
+				if !r.Enabled {
+					continue
+				}
+				configs = append(configs, engine.RuleConfig{
+					RuleCode: r.RuleCode,
+					N:        r.N,
+					Hits:     r.Hits,
+					K:        r.K,
+					Severity: r.Severity,
+				})
+			}
+			if len(configs) == 0 {
+				configs = []engine.RuleConfig{engine.DefaultRuleConfig("WE1")}
 			}
 
-			// 如果没有配置规则，默认使用WE1
-			if len(enabledRules) == 0 {
-				enabledRules = []string{"WE1"}
-			}
-
-			// 检测OOC
 			if controlLimit.UCL != nil && controlLimit.LCL != nil && controlLimit.CL != nil {
-				violations = engine.CheckOOC(values, *controlLimit.UCL, *controlLimit.CL, *controlLimit.LCL, enabledRules)
+				violations = engine.CheckOOCWithConfig(values, *controlLimit.UCL, *controlLimit.CL, *controlLimit.LCL, configs)
+				violations = uniqueViolations(violations)
 			}
 		}
 	}
@@ -238,4 +257,21 @@ func (s *CollectService) CollectData(req *CollectDataRequest) (*CollectDataRespo
 	}
 
 	return response, nil
+}
+
+// uniqueViolations 同一规则只保留一条命中，避免一次采集刷出多条同类告警
+func uniqueViolations(in []engine.RuleViolation) []engine.RuleViolation {
+	if len(in) <= 1 {
+		return in
+	}
+	seen := make(map[string]struct{}, len(in))
+	out := make([]engine.RuleViolation, 0, len(in))
+	for _, item := range in {
+		if _, ok := seen[item.RuleCode]; ok {
+			continue
+		}
+		seen[item.RuleCode] = struct{}{}
+		out = append(out, item)
+	}
+	return out
 }

@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center mx-4 gap-4">
-    <el-tooltip v-if="isDev" class="" effect="dark" content="视频教程" placement="bottom">
+    <el-tooltip v-if="isDev" class="" effect="dark" :content="$t('layout.tutorial')" placement="bottom">
       <el-dropdown @command="toDoc">
         <span class="w-8 h-8 p-2 rounded-full flex items-center justify-center shadow border border-gray-200 dark:border-gray-600 cursor-pointer border-solid">
           <el-icon>
@@ -20,7 +20,7 @@
       </el-dropdown>
     </el-tooltip>
 
-    <el-tooltip class="" effect="dark" content="搜索" placement="bottom">
+    <el-tooltip class="" effect="dark" :content="$t('layout.search')" placement="bottom">
         <span class="w-8 h-8 p-2 rounded-full flex items-center justify-center shadow border border-gray-200 dark:border-gray-600 cursor-pointer border-solid">
         <el-icon
             @click="handleCommand"
@@ -31,7 +31,7 @@
 
     </el-tooltip>
 
-    <el-tooltip class="" effect="dark" content="系统设置" placement="bottom">
+    <el-tooltip class="" effect="dark" :content="$t('layout.settings')" placement="bottom">
         <span class="w-8 h-8 p-2 rounded-full flex items-center justify-center shadow border border-gray-200 dark:border-gray-600 cursor-pointer border-solid">
          <el-icon
              @click="toggleSetting"
@@ -42,7 +42,7 @@
 
     </el-tooltip>
 
-    <el-tooltip class="" effect="dark" content="刷新" placement="bottom">
+    <el-tooltip class="" effect="dark" :content="$t('layout.refresh')" placement="bottom">
       <span class="w-8 h-8 p-2 rounded-full flex items-center justify-center shadow border border-gray-200 dark:border-gray-600 cursor-pointer border-solid">
       <el-icon
           :class="showRefreshAnmite ? 'animate-spin' : ''"
@@ -56,7 +56,7 @@
     <el-tooltip
       class=""
       effect="dark"
-      content="切换主题"
+      :content="$t('layout.theme')"
       placement="bottom"
     >
       <span class="w-8 h-8 p-2 rounded-full flex items-center justify-center shadow border border-gray-200 dark:border-gray-600 cursor-pointer border-solid">
@@ -76,6 +76,24 @@
 
     </el-tooltip>
 
+    <el-tooltip class="" effect="dark" :content="$t('layout.language')" placement="bottom">
+      <el-dropdown trigger="click" @command="onLocale">
+        <span class="w-8 h-8 p-2 rounded-full flex items-center justify-center shadow border border-gray-200 dark:border-gray-600 cursor-pointer border-solid text-xs font-semibold">
+          {{ localeShort }}
+        </span>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item
+              v-for="item in locales"
+              :key="item.value"
+              :command="item.value"
+              :disabled="item.value === currentLocale"
+            >{{ item.label }}</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+    </el-tooltip>
+
     <gva-setting v-model:drawer="showSettingDrawer"></gva-setting>
     <command-menu ref="command" />
   </div>
@@ -84,11 +102,22 @@
 <script setup>
   import { useAppStore } from '@/pinia'
   import GvaSetting from '@/view/layout/setting/index.vue'
-  import { ref } from 'vue'
+  import { computed, ref } from 'vue'
+  import { useI18n } from 'vue-i18n'
   import { emitter } from '@/utils/bus.js'
   import CommandMenu from '@/components/commandMenu/index.vue'
   import { toDoc } from '@/utils/doc'
   import { isDev } from '@/utils/env.js'
+  import { setLocale, SUPPORTED_LOCALES } from '@/i18n'
+
+  const { locale } = useI18n()
+  const locales = SUPPORTED_LOCALES
+  const currentLocale = computed(() => locale.value)
+  const localeShort = computed(() => {
+    const hit = SUPPORTED_LOCALES.find((item) => item.value === locale.value)
+    return hit?.short || '中'
+  })
+  const onLocale = (value) => setLocale(value)
 
   const appStore = useAppStore()
   const showSettingDrawer = ref(false)

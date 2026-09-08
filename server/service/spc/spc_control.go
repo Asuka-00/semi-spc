@@ -1,6 +1,8 @@
 package spc
 
 import (
+	"time"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
@@ -63,6 +65,7 @@ func (s *RuleService) GetSpcRule(id uint) (rule spc.SpcRule, err error) {
 }
 
 func (s *RuleService) GetSpcRuleList(info request.PageInfo, chartID uint) (list []spc.SpcRule, total int64, err error) {
+	info = normalizePage(info)
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	db := global.GVA_DB.Model(&spc.SpcRule{}).Preload("Chart")
@@ -155,7 +158,31 @@ func (s *OcapService) GetSpcOcapList(info request.PageInfo, chartID uint) (list 
 type OcapExecutionService struct{}
 
 func (s *OcapExecutionService) CreateSpcOcapExecution(exec *spc.SpcOcapExecution) error {
+	if exec.Status == "" {
+		exec.Status = "PENDING"
+	}
 	return global.GVA_DB.Create(exec).Error
+}
+
+func (s *OcapExecutionService) StartSpcOcapExecution(id uint, owner string) error {
+	now := time.Now()
+	updates := map[string]interface{}{
+		"status":     "IN_PROGRESS",
+		"started_at": now,
+	}
+	if owner != "" {
+		updates["owner"] = owner
+	}
+	return global.GVA_DB.Model(&spc.SpcOcapExecution{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (s *OcapExecutionService) CompleteSpcOcapExecution(id uint, comment string) error {
+	now := time.Now()
+	return global.GVA_DB.Model(&spc.SpcOcapExecution{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"status":    "COMPLETED",
+		"closed_at": now,
+		"comment":   comment,
+	}).Error
 }
 
 func (s *OcapExecutionService) UpdateSpcOcapExecution(exec *spc.SpcOcapExecution) error {

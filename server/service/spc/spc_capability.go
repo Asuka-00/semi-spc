@@ -1,9 +1,11 @@
 package spc
 
 import (
+	"errors"
 	"time"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
+	"github.com/flipped-aurora/gin-vue-admin/server/model/common/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
 	"github.com/flipped-aurora/gin-vue-admin/server/service/spc/engine"
 )
@@ -44,7 +46,7 @@ func (s *CapabilityService) CalculateCapability(req *CalculateCapabilityRequest)
 	}
 
 	if len(samples) < 2 {
-		return nil, err
+		return nil, errors.New("样本数量不足，至少需要2个子组才能计算过程能力")
 	}
 
 	// 提取均值和极差/标准差
@@ -76,7 +78,7 @@ func (s *CapabilityService) CalculateCapability(req *CalculateCapabilityRequest)
 	}
 
 	if result == nil {
-		return nil, err
+		return nil, errors.New("过程能力计算失败，请检查规格限与样本数据")
 	}
 
 	// 保存能力分析结果
@@ -103,7 +105,35 @@ func (s *CapabilityService) CalculateCapability(req *CalculateCapabilityRequest)
 
 // GetCapabilityHistory 获取能力分析历史
 func (s *CapabilityService) GetCapabilityHistory(chartID uint, limit int) (list []spc.SpcCapability, err error) {
-	err = global.GVA_DB.Where("chart_id = ?", chartID).
-		Order("created_at DESC").Limit(limit).Find(&list).Error
+	db := global.GVA_DB.Model(&spc.SpcCapability{}).Preload("Chart")
+	if chartID > 0 {
+		db = db.Where("chart_id = ?", chartID)
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	err = db.Order("created_at DESC").Limit(limit).Find(&list).Error
+	return
+}
+
+// GetCapabilityList 分页获取能力分析记录
+func (s *CapabilityService) GetCapabilityList(info request.PageInfo, chartID uint) (list []spc.SpcCapability, total int64, err error) {
+	if info.Page <= 0 {
+		info.Page = 1
+	}
+	if info.PageSize <= 0 {
+		info.PageSize = 10
+	}
+	limit := info.PageSize
+	offset := info.PageSize * (info.Page - 1)
+	db := global.GVA_DB.Model(&spc.SpcCapability{}).Preload("Chart")
+	if chartID > 0 {
+		db = db.Where("chart_id = ?", chartID)
+	}
+	err = db.Count(&total).Error
+	if err != nil {
+		return
+	}
+	err = db.Order("created_at DESC").Limit(limit).Offset(offset).Find(&list).Error
 	return
 }

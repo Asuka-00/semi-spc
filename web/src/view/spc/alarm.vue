@@ -1,178 +1,113 @@
 <template>
-  <!-- SPC告警中心 - 列表和处理页面 -->
-  <div>
-    <div class="gva-search-box">
-      <el-form ref="searchFormRef" :inline="true" :model="searchInfo">
-        <el-form-item label="告警类型">
-          <el-select v-model="searchInfo.alarmType" placeholder="请选择" clearable>
-            <el-option label="OOC失控" value="OOC" />
-            <el-option label="OOS超规格" value="OOS" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="告警状态">
-          <el-select v-model="searchInfo.status" placeholder="请选择" clearable>
-            <el-option label="未处理" value="OPEN" />
-            <el-option label="已确认" value="ACK" />
-            <el-option label="已关闭" value="CLOSED" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
-          <el-button icon="refresh" @click="onReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-    
-    <div class="gva-table-box">
-      <el-table :data="tableData" ref="multipleTable" row-key="ID">
-        <el-table-column label="ID" prop="ID" min-width="80" />
-        <el-table-column label="告警类型" prop="alarmType" min-width="100">
-          <template #default="scope">
-            <el-tag :type="scope.row.alarmType === 'OOC' ? 'warning' : 'danger'">
-              {{ scope.row.alarmType }}
-            </el-tag>
-          </template>
+  <div class="space-y-4">
+    <SpcPageHeader :title="$t('spc.alarm.title')" :subtitle="$t('spc.alarm.subtitle')" />
+    <div class="spc-panel">
+      <div class="gva-search-box !bg-transparent !p-0 !my-3">
+        <el-form :inline="true" :model="search">
+          <el-form-item :label="$t('spc.alarm.type')">
+            <el-select v-model="search.alarmType" clearable>
+              <el-option v-for="item in alarmTypes" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item :label="$t('spc.alarm.status')">
+            <el-select v-model="search.status" clearable>
+              <el-option :label="$t('spc.alarm.open')" value="OPEN" />
+              <el-option :label="$t('spc.alarm.acked')" value="ACK" />
+              <el-option :label="$t('spc.alarm.closed')" value="CLOSED" />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" icon="search" @click="loadList">{{ $t('common.query') }}</el-button>
+            <el-button icon="refresh" @click="reset">{{ $t('common.reset') }}</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+      <el-table v-loading="loading" :data="tableData" row-key="ID" :empty-text="$t('spc.alarm.empty')">
+        <el-table-column :label="$t('spc.alarm.type')" width="110">
+          <template #default="{ row }"><el-tag :type="alarmTypeTag(row.alarmType)" round>{{ $t(`spc.option.alarmType.${row.alarmType}`) }}</el-tag></template>
         </el-table-column>
-        <el-table-column label="严重度" prop="severity" min-width="100">
-          <template #default="scope">
-            <el-tag :type="scope.row.severity === 'CRIT' ? 'danger' : (scope.row.severity === 'WARN' ? 'warning' : 'info')">
-              {{ scope.row.severity }}
-            </el-tag>
-          </template>
+        <el-table-column :label="$t('spc.alarm.severity')" width="100">
+          <template #default="{ row }"><el-tag :type="severityTag(row.severity)" round>{{ $t(`spc.option.severity.${row.severity}`) }}</el-tag></template>
         </el-table-column>
-        <el-table-column label="规则代码" prop="ruleCode" min-width="100" />
-        <el-table-column label="状态" prop="status" min-width="100">
-          <template #default="scope">
-            <el-tag :type="scope.row.status === 'OPEN' ? 'danger' : (scope.row.status === 'ACK' ? 'warning' : 'success')">
-              {{ scope.row.status === 'OPEN' ? '未处理' : (scope.row.status === 'ACK' ? '已确认' : '已关闭') }}
-            </el-tag>
-          </template>
+        <el-table-column :label="$t('spc.alarm.chart')" min-width="140"><template #default="{ row }">{{ row.chart?.name || row.chartId }}</template></el-table-column>
+        <el-table-column :label="$t('spc.alarm.rule')" prop="ruleCode" width="110" />
+        <el-table-column :label="$t('spc.alarm.status')" width="110">
+          <template #default="{ row }"><el-tag :type="alarmStatusTag(row.status)" round>{{ alarmStatusText(row.status, t) }}</el-tag></template>
         </el-table-column>
-        <el-table-column label="备注" prop="remark" min-width="200" />
-        <el-table-column label="创建时间" prop="CreatedAt" min-width="180">
-          <template #default="scope">{{ formatDate(scope.row.CreatedAt) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" fixed="right" min-width="200">
-          <template #default="scope">
-            <el-button v-if="scope.row.status === 'OPEN'" type="warning" link icon="check" @click="ackAlarm(scope.row)">确认</el-button>
-            <el-button v-if="scope.row.status !== 'CLOSED'" type="success" link icon="close" @click="closeAlarm(scope.row)">关闭</el-button>
+        <el-table-column :label="$t('spc.alarm.time')" min-width="160"><template #default="{ row }">{{ formatDate(row.CreatedAt) }}</template></el-table-column>
+        <el-table-column :label="$t('common.action')" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button v-if="row.status === 'OPEN'" type="primary" link @click="act(row, 'ack')">{{ $t('spc.alarm.ack') }}</el-button>
+            <el-button v-if="row.status !== 'CLOSED'" type="primary" link @click="act(row, 'close')">{{ $t('spc.alarm.close') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
-      <div class="gva-pagination">
-        <el-pagination
-          :current-page="page"
-          :page-size="pageSize"
-          :page-sizes="[10, 30, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @current-change="handleCurrentChange"
-          @size-change="handleSizeChange"
-        />
+      <div class="gva-pagination mt-4">
+        <el-pagination :current-page="page" :page-size="pageSize" :total="total" layout="total, prev, pager, next" @current-change="(v) => { page = v; loadList() }" @size-change="(v) => { pageSize = v; loadList() }" />
       </div>
     </div>
-
-    <el-dialog v-model="remarkDialogVisible" :title="remarkDialogTitle" width="40%">
-      <el-input v-model="remarkText" type="textarea" :rows="4" placeholder="请输入处理备注" />
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="420px">
+      <el-input v-model="dialog.remark" type="textarea" :rows="4" :placeholder="$t('spc.alarm.remark')" />
       <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="remarkDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmRemark">确定</el-button>
-        </div>
+        <el-button @click="dialog.visible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="confirmAct">{{ $t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { getAlarmList, acknowledgeAlarm, closeAlarm as closeAlarmApi } from '@/api/spc/collect'
+import { acknowledgeAlarm, closeAlarm, getAlarmList } from '@/api/spc'
 import { formatDate } from '@/utils/format'
+import { ALARM_TYPE_VALUES, alarmStatusTag, alarmStatusText, alarmTypeTag, optionOf, severityTag } from './constants'
+import SpcPageHeader from './components/SpcPageHeader.vue'
 
+const { t } = useI18n()
+const loading = ref(false)
+const tableData = ref([])
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
-const tableData = ref([])
-const searchInfo = reactive({})
+const search = reactive({ alarmType: undefined, status: undefined })
+const alarmTypes = computed(() => optionOf(t, 'spc.option.alarmType', ALARM_TYPE_VALUES))
+const dialog = reactive({ visible: false, title: '', remark: '', row: null, mode: 'ack' })
 
-const remarkDialogVisible = ref(false)
-const remarkDialogTitle = ref('')
-const remarkText = ref('')
-let currentAlarm = null
-let currentAction = ''
-
-const getTableData = async() => {
-  const table = await getAlarmList({ page: page.value, pageSize: pageSize.value, ...searchInfo })
-  if (table.code === 0) {
-    tableData.value = table.data.list
-    total.value = table.data.total
-    page.value = table.data.page
-    pageSize.value = table.data.pageSize
+const loadList = async () => {
+  loading.value = true
+  try {
+    const res = await getAlarmList({ page: page.value, pageSize: pageSize.value, ...search })
+    if (res.code === 0) {
+      tableData.value = res.data?.list || []
+      total.value = res.data?.total || 0
+    }
+  } finally {
+    loading.value = false
   }
 }
-
-getTableData()
-
-const onSubmit = () => {
+const reset = () => {
+  search.alarmType = undefined
+  search.status = undefined
   page.value = 1
-  getTableData()
+  loadList()
 }
-
-const onReset = () => {
-  searchInfo.alarmType = ''
-  searchInfo.status = ''
-  onSubmit()
+const act = (row, mode) => {
+  dialog.row = row
+  dialog.mode = mode
+  dialog.remark = ''
+  dialog.title = mode === 'ack' ? t('spc.alarm.ackTitle') : t('spc.alarm.closeTitle')
+  dialog.visible = true
 }
-
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  getTableData()
-}
-
-const handleCurrentChange = (val) => {
-  page.value = val
-  getTableData()
-}
-
-const ackAlarm = (row) => {
-  currentAlarm = row
-  currentAction = 'ack'
-  remarkDialogTitle.value = '确认告警'
-  remarkText.value = ''
-  remarkDialogVisible.value = true
-}
-
-const closeAlarm = (row) => {
-  currentAlarm = row
-  currentAction = 'close'
-  remarkDialogTitle.value = '关闭告警'
-  remarkText.value = ''
-  remarkDialogVisible.value = true
-}
-
-const confirmRemark = async() => {
-  if (!currentAlarm) return
-  
-  const data = { ID: currentAlarm.ID, remark: remarkText.value }
-  let res
-  
-  if (currentAction === 'ack') {
-    res = await acknowledgeAlarm(data)
-  } else {
-    res = await closeAlarmApi(data)
-  }
-  
+const confirmAct = async () => {
+  const api = dialog.mode === 'ack' ? acknowledgeAlarm : closeAlarm
+  const res = await api({ ID: dialog.row.ID, id: dialog.row.ID, remark: dialog.remark })
   if (res.code === 0) {
-    ElMessage({
-      type: 'success',
-      message: currentAction === 'ack' ? '确认成功' : '关闭成功'
-    })
-    remarkDialogVisible.value = false
-    getTableData()
+    ElMessage.success(dialog.mode === 'ack' ? t('spc.alarm.ackOk') : t('spc.alarm.closeOk'))
+    dialog.visible = false
+    loadList()
   }
 }
+onMounted(loadList)
 </script>
-
-<style scoped>
-</style>

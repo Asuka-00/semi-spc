@@ -1,4 +1,4 @@
-package source
+package spc
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
+	sysService "github.com/flipped-aurora/gin-vue-admin/server/service/system"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +14,7 @@ type initSpcDemoData struct{}
 
 // auto initialize data
 func init() {
-	RegisterInit(InitOrderExternal, &initSpcDemoData{})
+	sysService.RegisterInit(sysService.InitOrderExternal+10, &initSpcDemoData{})
 }
 
 func (i *initSpcDemoData) InitializerName() string {
@@ -21,11 +22,19 @@ func (i *initSpcDemoData) InitializerName() string {
 }
 
 func (i *initSpcDemoData) MigrateTable(ctx context.Context) (next context.Context, err error) {
-	return ctx, nil
+	db, ok := ctx.Value("db").(*gorm.DB)
+	if !ok {
+		return ctx, sysService.ErrMissingDBContext
+	}
+	return ctx, db.AutoMigrate(spcModels()...)
 }
 
 func (i *initSpcDemoData) TableCreated(ctx context.Context) bool {
-	return true
+	db, ok := ctx.Value("db").(*gorm.DB)
+	if !ok {
+		return false
+	}
+	return db.Migrator().HasTable(&spc.SpcSite{})
 }
 
 func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Context, err error) {
@@ -69,6 +78,15 @@ func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Cont
 		return ctx, err
 	}
 
+	chambers := []spc.SpcChamber{
+		{EquipmentID: equipments[0].ID, Code: "LITHO-01-C1", Name: "光刻腔室1", Status: 1},
+		{EquipmentID: equipments[1].ID, Code: "ETCH-01-C1", Name: "刻蚀腔室1", Status: 1},
+		{EquipmentID: equipments[1].ID, Code: "ETCH-01-C2", Name: "刻蚀腔室2", Status: 1},
+	}
+	if err = db.Create(&chambers).Error; err != nil {
+		return ctx, err
+	}
+
 	// 4. 创建技术节点和产品
 	tech := &spc.SpcTechnology{
 		Code:   "28N",
@@ -96,6 +114,14 @@ func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Cont
 		{Code: "GATE_ETCH", Name: "栅极刻蚀", StepType: "ETCH", Status: 1},
 	}
 	if err = db.Create(&steps).Error; err != nil {
+		return ctx, err
+	}
+
+	recipes := []spc.SpcRecipe{
+		{EquipmentID: equipments[0].ID, ProcessStepID: steps[0].ID, Code: "RCP-GATE-LITHO", Name: "栅极光刻配方", Version: "V1", Status: 1},
+		{EquipmentID: equipments[1].ID, ProcessStepID: steps[1].ID, Code: "RCP-GATE-ETCH", Name: "栅极刻蚀配方", Version: "V1", Status: 1},
+	}
+	if err = db.Create(&recipes).Error; err != nil {
 		return ctx, err
 	}
 
@@ -229,9 +255,12 @@ func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Cont
 
 	// 10. 创建规则
 	rules := []spc.SpcRule{
-		{ChartID: chartCD.ID, RuleCode: "WE1", Enabled: true, N: 1, K: 3.0, Remark: "点超出控制限"},
-		{ChartID: chartCD.ID, RuleCode: "WE2", Enabled: true, N: 3, K: 2.0, Remark: "3点中2点超出2σ"},
-		{ChartID: chartCD.ID, RuleCode: "WE4", Enabled: true, N: 8, K: 0.0, Remark: "连续8点同侧"},
+		{ChartID: chartCD.ID, RuleCode: "WE1", Enabled: true, N: 1, Hits: 1, K: 3.0, Severity: "CRIT", Remark: "点超出控制限"},
+		{ChartID: chartCD.ID, RuleCode: "WE2", Enabled: true, N: 3, Hits: 2, K: 2.0, Severity: "WARN", Remark: "3点中2点超出2σ"},
+		{ChartID: chartCD.ID, RuleCode: "WE4", Enabled: true, N: 8, Hits: 8, K: 0.0, Severity: "WARN", Remark: "连续8点同侧"},
+		{ChartID: chartThk.ID, RuleCode: "WE1", Enabled: true, N: 1, Hits: 1, K: 3.0, Severity: "CRIT", Remark: "点超出控制限"},
+		{ChartID: chartThk.ID, RuleCode: "WE4", Enabled: true, N: 8, Hits: 8, K: 0.0, Severity: "WARN", Remark: "连续8点同侧"},
+		{ChartID: chartThk.ID, RuleCode: "NELSON5", Enabled: true, N: 3, Hits: 2, K: 2.0, Severity: "WARN", Remark: "3点中2点超2σ"},
 	}
 	if err = db.Create(&rules).Error; err != nil {
 		return ctx, err
@@ -247,6 +276,15 @@ func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Cont
 		Status:    1,
 	}
 	if err = db.Create(lot).Error; err != nil {
+		return ctx, err
+	}
+
+	wafers := []spc.SpcWafer{
+		{LotID: lot.ID, SlotNo: 1, WaferID: "W001", Status: 1},
+		{LotID: lot.ID, SlotNo: 2, WaferID: "W002", Status: 1},
+		{LotID: lot.ID, SlotNo: 3, WaferID: "W003", Status: 1},
+	}
+	if err = db.Create(&wafers).Error; err != nil {
 		return ctx, err
 	}
 
@@ -315,7 +353,7 @@ func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Cont
 		MeanVal:     &meanOOS,
 		RangeVal:    &rangeVal,
 		StdVal:      &stdVal,
-		OocFlag:     false,
+		OocFlag:     true,
 		OosFlag:     true,
 	}
 	samples = append(samples, sampleOOS)
@@ -343,6 +381,41 @@ func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Cont
 		samples = append(samples, sample)
 	}
 
+	// I-MR 氧化层厚度样本，供第二张控制图联调
+	for i := 0; i < 28; i++ {
+		mean := 1500.0 + float64(i%5-2)*3.5
+		mr := 8.0 + float64(i%3)*1.2
+		sampleTime := baseTime.Add(time.Duration(i) * 90 * time.Minute)
+		sample := &spc.SpcSample{
+			ChartID:     chartThk.ID,
+			LotID:       &lot.ID,
+			EquipmentID: &equipments[0].ID,
+			SampleTime:  &sampleTime,
+			SubgroupNo:  i + 1,
+			N:           1,
+			MeanVal:     &mean,
+			RangeVal:    &mr,
+			OocFlag:     false,
+			OosFlag:     false,
+		}
+		samples = append(samples, sample)
+	}
+	meanThkOOC := 1528.0
+	mrThk := 18.0
+	sampleTimeThk := baseTime.Add(29 * 90 * time.Minute)
+	samples = append(samples, &spc.SpcSample{
+		ChartID:     chartThk.ID,
+		LotID:       &lot.ID,
+		EquipmentID: &equipments[0].ID,
+		SampleTime:  &sampleTimeThk,
+		SubgroupNo:  29,
+		N:           1,
+		MeanVal:     &meanThkOOC,
+		RangeVal:    &mrThk,
+		OocFlag:     true,
+		OosFlag:     false,
+	})
+
 	if err = db.Create(&samples).Error; err != nil {
 		return ctx, err
 	}
@@ -361,6 +434,21 @@ func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Cont
 		return ctx, err
 	}
 
+	thkOOC := samples[len(samples)-1]
+	alarmThk := &spc.SpcAlarm{
+		SampleID:  thkOOC.ID,
+		ChartID:   chartThk.ID,
+		AlarmType: "OOC",
+		RuleCode:  "WE1",
+		Severity:  "CRIT",
+		Status:    "OPEN",
+		HoldLot:   false,
+		Remark:    "氧化层厚度超出控制上限",
+	}
+	if err = db.Create(alarmThk).Error; err != nil {
+		return ctx, err
+	}
+
 	// 14. 创建OCAP模板
 	ocap := &spc.SpcOcap{
 		ChartID:     chartCD.ID,
@@ -370,6 +458,17 @@ func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Cont
 		Status:      1,
 	}
 	if err = db.Create(ocap).Error; err != nil {
+		return ctx, err
+	}
+
+	ocapExec := &spc.SpcOcapExecution{
+		AlarmID: alarmOOS.ID,
+		OcapID:  ocap.ID,
+		Status:  "PENDING",
+		Owner:   "engineer",
+		Remark:  "演示：待处理的 OOS 闭环",
+	}
+	if err = db.Create(ocapExec).Error; err != nil {
 		return ctx, err
 	}
 

@@ -1,219 +1,163 @@
 <template>
-  <!-- SPC厂区管理 - 列表页面 -->
-  <div>
-    <div class="gva-search-box">
-      <el-form ref="searchFormRef" :inline="true" :model="searchInfo">
-        <el-form-item label="厂区代码">
-          <el-input v-model="searchInfo.code" placeholder="请输入厂区代码" clearable />
-        </el-form-item>
-        <el-form-item label="厂区名称">
-          <el-input v-model="searchInfo.name" placeholder="请输入厂区名称" clearable />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" icon="search" @click="onSubmit">查询</el-button>
-          <el-button icon="refresh" @click="onReset">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-    <div class="gva-table-box">
-      <div class="gva-btn-list">
-        <el-button type="primary" icon="plus" @click="openDialog('add')">新增</el-button>
-      </div>
-      <el-table :data="tableData" @sort-change="sortChange" :default-sort="defaultSort" ref="multipleTable" row-key="ID">
-        <el-table-column label="ID" prop="ID" min-width="80" />
-        <el-table-column label="厂区代码" prop="code" min-width="120" />
-        <el-table-column label="厂区名称" prop="name" min-width="150" />
-        <el-table-column label="时区" prop="timezone" min-width="150" />
-        <el-table-column label="状态" prop="status" min-width="100">
-          <template #default="scope">
-            <el-tag :type="scope.row.status === 1 ? 'success' : 'info'">
-              {{ scope.row.status === 1 ? '启用' : '禁用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="创建时间" prop="CreatedAt" min-width="180">
-          <template #default="scope">{{ formatDate(scope.row.CreatedAt) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" fixed="right" min-width="200">
-          <template #default="scope">
-            <el-button type="primary" link icon="edit" @click="openDialog('edit', scope.row)">编辑</el-button>
-            <el-button type="primary" link icon="delete" @click="deleteFunc(scope.row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div class="gva-pagination">
-        <el-pagination
-          :current-page="page"
-          :page-size="pageSize"
-          :page-sizes="[10, 30, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @current-change="handleCurrentChange"
-          @size-change="handleSizeChange"
-        />
-      </div>
-    </div>
+  <div class="space-y-4">
+    <SpcPageHeader :title="$t('spc.site.title')" :subtitle="$t('spc.site.subtitle')" />
+    <el-tabs v-model="activeTab" class="spc-panel !px-4 !pt-2">
+      <el-tab-pane :label="$t('spc.site.siteTab')" name="site">
+        <div class="gva-search-box !bg-transparent !p-0 !my-3">
+          <el-form :inline="true" :model="site.searchInfo">
+            <el-form-item :label="$t('common.keyword')">
+              <el-input v-model="site.searchInfo.keyword" :placeholder="`${$t('common.code')} / ${$t('common.name')}`" clearable @keyup.enter="site.onSubmit" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" icon="search" @click="site.onSubmit">{{ $t('common.query') }}</el-button>
+              <el-button icon="refresh" @click="site.onReset()">{{ $t('common.reset') }}</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+        <div class="gva-btn-list">
+          <el-button type="primary" icon="plus" @click="openSite('add')">{{ $t('spc.site.addSite') }}</el-button>
+        </div>
+        <el-table v-loading="site.loading" :data="site.tableData" row-key="ID">
+          <el-table-column :label="$t('common.code')" prop="code" min-width="120" />
+          <el-table-column :label="$t('common.name')" prop="name" min-width="160" />
+          <el-table-column :label="$t('spc.site.timezone')" prop="timezone" min-width="140" />
+          <el-table-column :label="$t('common.status')" width="100">
+            <template #default="{ row }">
+              <el-tag :type="statusTag(row.status)" round>{{ statusText(row.status, t) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('common.remark')" prop="remark" min-width="160" show-overflow-tooltip />
+          <el-table-column :label="$t('common.action')" fixed="right" width="160">
+            <template #default="{ row }">
+              <el-button type="primary" link icon="edit" @click="openSite('edit', row)">{{ $t('common.edit') }}</el-button>
+              <el-button type="danger" link icon="delete" @click="site.deleteRow(row, $t('spc.site.siteTab'))">{{ $t('common.delete') }}</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="gva-pagination mt-4">
+          <el-pagination :current-page="site.page" :page-size="site.pageSize" :page-sizes="[10, 30, 50, 100]" :total="site.total" layout="total, sizes, prev, pager, next" @current-change="site.handleCurrentChange" @size-change="site.handleSizeChange" />
+        </div>
+      </el-tab-pane>
 
-    <el-dialog v-model="dialogFormVisible" :title="dialogTitle" width="50%">
-      <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
-        <el-form-item label="厂区代码" prop="code">
-          <el-input v-model="formData.code" placeholder="请输入厂区代码" clearable />
+      <el-tab-pane :label="$t('spc.site.areaTab')" name="area">
+        <div class="gva-search-box !bg-transparent !p-0 !my-3">
+          <el-form :inline="true" :model="area.searchInfo">
+            <el-form-item :label="$t('spc.site.parentSite')">
+              <el-select v-model="area.searchInfo.siteId" :placeholder="$t('spc.site.allSites')" clearable filterable>
+                <el-option v-for="item in siteOptions" :key="item.ID" :label="`${item.code} · ${item.name}`" :value="item.ID" />
+              </el-select>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" icon="search" @click="area.onSubmit">{{ $t('common.query') }}</el-button>
+              <el-button icon="refresh" @click="area.onReset(['siteId'])">{{ $t('common.reset') }}</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+        <div class="gva-btn-list">
+          <el-button type="primary" icon="plus" @click="openArea('add')">{{ $t('spc.site.addArea') }}</el-button>
+        </div>
+        <el-table v-loading="area.loading" :data="area.tableData" row-key="ID">
+          <el-table-column :label="$t('common.code')" prop="code" min-width="120" />
+          <el-table-column :label="$t('common.name')" prop="name" min-width="160" />
+          <el-table-column :label="$t('spc.site.parentSite')" min-width="140">
+            <template #default="{ row }">{{ row.site?.name || row.siteId }}</template>
+          </el-table-column>
+          <el-table-column :label="$t('common.status')" width="100">
+            <template #default="{ row }">
+              <el-tag :type="statusTag(row.status)" round>{{ statusText(row.status, t) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column :label="$t('common.action')" fixed="right" width="160">
+            <template #default="{ row }">
+              <el-button type="primary" link icon="edit" @click="openArea('edit', row)">{{ $t('common.edit') }}</el-button>
+              <el-button type="danger" link icon="delete" @click="area.deleteRow(row, $t('spc.site.areaTab'))">{{ $t('common.delete') }}</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="gva-pagination mt-4">
+          <el-pagination :current-page="area.page" :page-size="area.pageSize" :page-sizes="[10, 30, 50, 100]" :total="area.total" layout="total, sizes, prev, pager, next" @current-change="area.handleCurrentChange" @size-change="area.handleSizeChange" />
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+
+    <el-drawer v-model="site.drawerVisible" :title="site.drawerTitle" size="480px" destroy-on-close>
+      <el-form :ref="bindFormRef(site)" :model="site.formData" :rules="siteRules" label-width="110px">
+        <el-form-item :label="$t('spc.site.siteCode')" prop="code"><el-input v-model="site.formData.code" /></el-form-item>
+        <el-form-item :label="$t('spc.site.siteName')" prop="name"><el-input v-model="site.formData.name" /></el-form-item>
+        <el-form-item :label="$t('spc.site.timezone')" prop="timezone">
+          <el-select v-model="site.formData.timezone" class="w-full">
+            <el-option v-for="tz in TIMEZONES" :key="tz.value" :label="tz.label" :value="tz.value" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="厂区名称" prop="name">
-          <el-input v-model="formData.name" placeholder="请输入厂区名称" clearable />
-        </el-form-item>
-        <el-form-item label="时区" prop="timezone">
-          <el-input v-model="formData.timezone" placeholder="请输入时区" clearable />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="formData.status">
-            <el-radio :label="1">启用</el-radio>
-            <el-radio :label="0">禁用</el-radio>
+        <el-form-item :label="$t('common.status')">
+          <el-radio-group v-model="site.formData.status">
+            <el-radio :label="1">{{ $t('common.enabled') }}</el-radio>
+            <el-radio :label="0">{{ $t('common.disabled') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="formData.remark" type="textarea" placeholder="请输入备注" />
-        </el-form-item>
+        <el-form-item :label="$t('common.remark')"><el-input v-model="site.formData.remark" type="textarea" :rows="3" /></el-form-item>
       </el-form>
       <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="closeDialog">取消</el-button>
-          <el-button type="primary" @click="enterDialog">确定</el-button>
-        </div>
+        <el-button @click="site.closeDrawer">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="site.submitting" @click="site.enterDrawer">{{ $t('common.save') }}</el-button>
       </template>
-    </el-dialog>
+    </el-drawer>
+
+    <el-drawer v-model="area.drawerVisible" :title="area.drawerTitle" size="480px" destroy-on-close>
+      <el-form :ref="bindFormRef(area)" :model="area.formData" :rules="areaRules" label-width="110px">
+        <el-form-item :label="$t('spc.site.parentSite')" prop="siteId">
+          <el-select v-model="area.formData.siteId" class="w-full" filterable>
+            <el-option v-for="item in siteOptions" :key="item.ID" :label="`${item.code} · ${item.name}`" :value="item.ID" />
+          </el-select>
+        </el-form-item>
+        <el-form-item :label="$t('spc.site.areaCode')" prop="code"><el-input v-model="area.formData.code" /></el-form-item>
+        <el-form-item :label="$t('spc.site.areaName')" prop="name"><el-input v-model="area.formData.name" /></el-form-item>
+        <el-form-item :label="$t('common.status')">
+          <el-radio-group v-model="area.formData.status">
+            <el-radio :label="1">{{ $t('common.enabled') }}</el-radio>
+            <el-radio :label="0">{{ $t('common.disabled') }}</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item :label="$t('common.remark')"><el-input v-model="area.formData.remark" type="textarea" :rows="3" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="area.closeDrawer">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="area.submitting" @click="area.enterDrawer">{{ $t('common.save') }}</el-button>
+      </template>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getSiteList, createSite, updateSite, deleteSite } from '@/api/spc/master'
-import { formatDate } from '@/utils/format'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { siteApi, areaApi } from '@/api/spc'
+import { TIMEZONES, requiredRule, selectRule, statusTag, statusText } from './constants'
+import { loadOptions, useSpcCrud, bindFormRef } from './composables/useSpcCrud'
+import SpcPageHeader from './components/SpcPageHeader.vue'
 
-const page = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
-const tableData = ref([])
-const searchInfo = reactive({})
-const defaultSort = ref({ prop: 'ID', order: 'descending' })
+const { t } = useI18n()
+const activeTab = ref('site')
+const siteOptions = ref([])
+const site = useSpcCrud({ listApi: siteApi.getList, createApi: siteApi.create, updateApi: siteApi.update, deleteApi: siteApi.remove })
+const area = useSpcCrud({ listApi: areaApi.getList, createApi: areaApi.create, updateApi: areaApi.update, deleteApi: areaApi.remove })
+const siteRules = computed(() => ({ code: requiredRule(t), name: requiredRule(t), timezone: selectRule(t) }))
+const areaRules = computed(() => ({ siteId: selectRule(t), code: requiredRule(t), name: requiredRule(t) }))
 
-const dialogFormVisible = ref(false)
-const dialogTitle = ref('')
-const formRef = ref(null)
-const formData = ref({
-  code: '',
-  name: '',
-  timezone: 'Asia/Shanghai',
-  status: 1,
-  remark: ''
+const openSite = (type, row) => {
+  site.openDrawer(type === 'add' ? t('spc.site.addSite') : t('spc.site.editSite'), type === 'add'
+    ? { code: '', name: '', timezone: 'Asia/Shanghai', status: 1, remark: '' }
+    : row)
+}
+const openArea = (type, row) => {
+  area.openDrawer(type === 'add' ? t('spc.site.addArea') : t('spc.site.editArea'), type === 'add'
+    ? { siteId: siteOptions.value[0]?.ID, code: '', name: '', status: 1, remark: '' }
+    : row)
+}
+
+onMounted(async () => {
+  site.getTableData()
+  area.getTableData()
+  siteOptions.value = await loadOptions(siteApi.getList)
 })
-
-const rules = reactive({
-  code: [{ required: true, message: '请输入厂区代码', trigger: 'blur' }],
-  name: [{ required: true, message: '请输入厂区名称', trigger: 'blur' }],
-  timezone: [{ required: true, message: '请输入时区', trigger: 'blur' }]
-})
-
-const getTableData = async() => {
-  const table = await getSiteList({ page: page.value, pageSize: pageSize.value, ...searchInfo })
-  if (table.code === 0) {
-    tableData.value = table.data.list
-    total.value = table.data.total
-    page.value = table.data.page
-    pageSize.value = table.data.pageSize
-  }
-}
-
-getTableData()
-
-const onSubmit = () => {
-  page.value = 1
-  pageSize.value = 10
-  getTableData()
-}
-
-const onReset = () => {
-  searchInfo.code = ''
-  searchInfo.name = ''
-  onSubmit()
-}
-
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  getTableData()
-}
-
-const handleCurrentChange = (val) => {
-  page.value = val
-  getTableData()
-}
-
-const sortChange = ({ prop, order }) => {
-  // 排序处理
-  getTableData()
-}
-
-const openDialog = (type, row) => {
-  dialogFormVisible.value = true
-  if (type === 'add') {
-    dialogTitle.value = '新增厂区'
-    formData.value = {
-      code: '',
-      name: '',
-      timezone: 'Asia/Shanghai',
-      status: 1,
-      remark: ''
-    }
-  } else {
-    dialogTitle.value = '编辑厂区'
-    formData.value = { ...row }
-  }
-}
-
-const closeDialog = () => {
-  dialogFormVisible.value = false
-  formRef.value?.resetFields()
-}
-
-const enterDialog = async() => {
-  formRef.value?.validate(async(valid) => {
-    if (valid) {
-      let res
-      if (formData.value.ID) {
-        res = await updateSite(formData.value)
-      } else {
-        res = await createSite(formData.value)
-      }
-      if (res.code === 0) {
-        ElMessage({
-          type: 'success',
-          message: formData.value.ID ? '编辑成功' : '创建成功'
-        })
-        closeDialog()
-        getTableData()
-      }
-    }
-  })
-}
-
-const deleteFunc = async(row) => {
-  ElMessageBox.confirm('确定要删除吗?', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async() => {
-    const res = await deleteSite({ ID: row.ID })
-    if (res.code === 0) {
-      ElMessage({
-        type: 'success',
-        message: '删除成功'
-      })
-      getTableData()
-    }
-  })
-}
 </script>
-
-<style scoped>
-</style>

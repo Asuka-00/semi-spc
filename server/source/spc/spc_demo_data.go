@@ -22,11 +22,19 @@ func (i *initSpcDemoData) InitializerName() string {
 }
 
 func (i *initSpcDemoData) MigrateTable(ctx context.Context) (next context.Context, err error) {
-	return ctx, nil
+	db, ok := ctx.Value("db").(*gorm.DB)
+	if !ok {
+		return ctx, sysService.ErrMissingDBContext
+	}
+	return ctx, db.AutoMigrate(spcModels()...)
 }
 
 func (i *initSpcDemoData) TableCreated(ctx context.Context) bool {
-	return true
+	db, ok := ctx.Value("db").(*gorm.DB)
+	if !ok {
+		return false
+	}
+	return db.Migrator().HasTable(&spc.SpcSite{})
 }
 
 func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Context, err error) {

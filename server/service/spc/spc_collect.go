@@ -190,6 +190,7 @@ func (s *CollectService) CollectData(req *CollectDataRequest) (*CollectDataRespo
 
 			if controlLimit.UCL != nil && controlLimit.LCL != nil && controlLimit.CL != nil {
 				violations = engine.CheckOOCWithConfig(values, *controlLimit.UCL, *controlLimit.CL, *controlLimit.LCL, configs)
+				violations = uniqueViolations(violations)
 			}
 		}
 	}
@@ -256,4 +257,21 @@ func (s *CollectService) CollectData(req *CollectDataRequest) (*CollectDataRespo
 	}
 
 	return response, nil
+}
+
+// uniqueViolations 同一规则只保留一条命中，避免一次采集刷出多条同类告警
+func uniqueViolations(in []engine.RuleViolation) []engine.RuleViolation {
+	if len(in) <= 1 {
+		return in
+	}
+	seen := make(map[string]struct{}, len(in))
+	out := make([]engine.RuleViolation, 0, len(in))
+	for _, item := range in {
+		if _, ok := seen[item.RuleCode]; ok {
+			continue
+		}
+		seen[item.RuleCode] = struct{}{}
+		out = append(out, item)
+	}
+	return out
 }

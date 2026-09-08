@@ -314,7 +314,10 @@ export default {
       cusumK: 'CUSUM K',
       cusumH: 'CUSUM H',
       current: '当前有效',
-      rulesSaved: '规则已保存'
+      rulesSaved: '规则已保存',
+      recalc: '按样本重算',
+      recalcOk: '控制限已重算',
+      needChart: '请先选择控制图'
     },
     runtime: {
       title: '实时监控',
@@ -343,7 +346,8 @@ export default {
       sampleTime: '采样时间',
       subgroupNo: '子组号',
       values: '测量值',
-      valuesHint: '多个数值用逗号分隔，数量应与子组大小一致',
+      valuesHint: '多个数值用逗号或空格分隔，数量应与子组大小一致',
+      fillExample: '填入示例',
       submit: '提交数据',
       result: '采集结果',
       noResult: '暂无采集结果',
@@ -372,6 +376,7 @@ export default {
       ackTitle: '确认告警',
       closeTitle: '关闭告警',
       remark: '处理备注',
+      empty: '暂无告警',
       open: '未处理',
       acked: '已确认',
       closed: '已关闭',
@@ -386,7 +391,10 @@ export default {
       plan: '方案',
       exec: '执行记录',
       trigger: '触发类型',
-      steps: '步骤 JSON',
+      steps: '处理步骤',
+      addAction: '添加步骤',
+      removeAction: '删除',
+      stepAction: '行动',
       owner: '负责人',
       start: '开始',
       complete: '完成',
@@ -414,7 +422,8 @@ export default {
       mean: '均值',
       stdev: '标准差',
       chart: '控制图',
-      window: '分析窗口'
+      window: '分析窗口',
+      empty: '暂无能力分析记录，选择控制图后点击计算。'
     },
     rule: {
       WE1: { name: 'WE1 超出控制限', desc: '任意一点超出 Kσ 控制限（默认 3σ）。' },

@@ -18,7 +18,7 @@
     </div>
     <div class="spc-panel">
       <div class="mb-3 text-sm font-semibold">{{ $t('spc.runtime.samples') }}</div>
-      <el-table :data="samples" row-key="ID">
+      <el-table :data="samples" row-key="ID" :empty-text="$t('common.noData')">
         <el-table-column :label="$t('spc.runtime.subgroup')" prop="subgroupNo" width="100" />
         <el-table-column :label="$t('spc.runtime.sampleTime')" min-width="170"><template #default="{ row }">{{ formatDate(row.sampleTime) }}</template></el-table-column>
         <el-table-column :label="$t('spc.runtime.mean')" width="110"><template #default="{ row }">{{ num(row.meanVal) }}</template></el-table-column>

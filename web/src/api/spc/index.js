@@ -78,3 +78,4 @@ export const updateChart = chartApi.update
 export const deleteChart = chartApi.remove
 export const getRuleCatalog = (params) => get('/spc/getRuleCatalog', params)
 export const saveChartRules = (data) => post('/spc/saveChartRules', data)
+export const calculateControlLimit = (data) => post('/spc/calculateControlLimit', data)

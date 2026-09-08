@@ -26,7 +26,7 @@
     </div>
     <div class="spc-panel">
       <div class="mb-3 text-sm font-semibold">{{ $t('spc.capability.history') }}</div>
-      <el-table :data="history" row-key="ID">
+      <el-table :data="history" row-key="ID" :empty-text="$t('spc.capability.empty')">
         <el-table-column :label="$t('spc.capability.chart')" min-width="140"><template #default="{ row }">{{ row.chart?.name || row.chartId }}</template></el-table-column>
         <el-table-column :label="$t('spc.capability.window')" min-width="220"><template #default="{ row }">{{ formatDate(row.windowFrom) }} ~ {{ formatDate(row.windowTo) }}</template></el-table-column>
         <el-table-column label="N" prop="n" width="70" />

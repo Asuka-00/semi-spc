@@ -40,6 +40,7 @@
               </el-select>
             </el-form-item>
             <el-form-item><el-button type="primary" icon="plus" @click="openLimit('add')">{{ $t('spc.chart.addLimit') }}</el-button></el-form-item>
+            <el-form-item><el-button :disabled="!limit.searchInfo.chartId" :loading="recalcing" @click="recalcLimits">{{ $t('spc.chart.recalc') }}</el-button></el-form-item>
           </el-form>
         </div>
         <el-table v-loading="limit.loading" :data="limit.tableData" row-key="ID">
@@ -47,6 +48,7 @@
           <el-table-column label="UCL" width="100"><template #default="{ row }">{{ num(row.ucl) }}</template></el-table-column>
           <el-table-column label="CL" width="100"><template #default="{ row }">{{ num(row.cl) }}</template></el-table-column>
           <el-table-column label="LCL" width="100"><template #default="{ row }">{{ num(row.lcl) }}</template></el-table-column>
+          <el-table-column label="UCL-S" width="100"><template #default="{ row }">{{ num(row.uclS) }}</template></el-table-column>
           <el-table-column :label="$t('spc.chart.source')" width="110"><template #default="{ row }">{{ $t(`spc.option.limitSource.${row.source}`, row.source) }}</template></el-table-column>
           <el-table-column :label="$t('spc.chart.calcN')" prop="calcN" width="110" />
           <el-table-column :label="$t('common.action')" width="160"><template #default="{ row }"><el-button type="primary" link @click="openLimit('edit', row)">{{ $t('common.edit') }}</el-button><el-button type="danger" link @click="limit.deleteRow(row, $t('spc.chart.tabLimit'))">{{ $t('common.delete') }}</el-button></template></el-table-column>
@@ -139,7 +141,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { chartApi, controlLimitApi, getRuleCatalog, parameterApi, ruleApi, saveChartRules, specApi } from '@/api/spc'
+import { chartApi, calculateControlLimit, controlLimitApi, getRuleCatalog, parameterApi, ruleApi, saveChartRules, specApi } from '@/api/spc'
 import { CHART_TYPE_VALUES, LIMIT_METHOD_VALUES, LIMIT_SOURCE_VALUES, SEVERITY_VALUES, num, optionOf, requiredRule, selectRule, statusTag, statusText } from './constants'
 import { bindFormRef, loadOptions, useSpcCrud } from './composables/useSpcCrud'
 import SpcPageHeader from './components/SpcPageHeader.vue'
@@ -153,6 +155,7 @@ const catalog = ref([])
 const ruleRows = ref([])
 const ruleChartId = ref()
 const savingRules = ref(false)
+const recalcing = ref(false)
 const chartTypes = computed(() => optionOf(t, 'spc.option.chartType', CHART_TYPE_VALUES))
 const limitMethods = computed(() => optionOf(t, 'spc.option.limitMethod', LIMIT_METHOD_VALUES))
 const limitSources = computed(() => optionOf(t, 'spc.option.limitSource', LIMIT_SOURCE_VALUES))
@@ -221,6 +224,23 @@ const gotoRules = (row) => {
   ruleChartId.value = row.ID
   activeTab.value = 'rule'
   loadRules()
+}
+
+const recalcLimits = async () => {
+  if (!limit.searchInfo.chartId) {
+    ElMessage.warning(t('spc.chart.needChart'))
+    return
+  }
+  recalcing.value = true
+  try {
+    const res = await calculateControlLimit({ chartId: limit.searchInfo.chartId, sampleN: 50 })
+    if (res.code === 0) {
+      ElMessage.success(t('spc.chart.recalcOk'))
+      limit.getTableData()
+    }
+  } finally {
+    recalcing.value = false
+  }
 }
 
 const onTabChange = (name) => {

@@ -149,7 +149,7 @@ func (i *initSpcMenu) DataInserted(ctx context.Context) bool {
 		}
 	}
 	var apiCount int64
-	db.Model(&system.SysApi{}).Where("path = ? AND method = ?", "/spc/getDashboardOverview", "GET").Count(&apiCount)
+	db.Model(&system.SysApi{}).Where("path = ? AND method = ?", "/spc/calculateControlLimit", "POST").Count(&apiCount)
 	return apiCount > 0
 }
 
@@ -257,6 +257,7 @@ func spcAPIList() []system.SysApi {
 		{"/spc/getChartRuntime", "控制图运行时数据", "GET"},
 		{"/spc/getRuleCatalog", "规则目录", "GET"},
 		{"/spc/saveChartRules", "保存控制图规则", "POST"},
+		{"/spc/calculateControlLimit", "计算控制限", "POST"},
 	}
 	apis := make([]system.SysApi, 0, len(items))
 	for _, it := range items {

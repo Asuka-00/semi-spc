@@ -314,7 +314,10 @@ export default {
       cusumK: 'CUSUM K',
       cusumH: 'CUSUM H',
       current: '現行',
-      rulesSaved: 'ルールを保存しました'
+      rulesSaved: 'ルールを保存しました',
+      recalc: 'サンプルから再計算',
+      recalcOk: '管理限界を再計算しました',
+      needChart: '先に管理図を選択してください'
     },
     runtime: {
       title: 'リアルタイム監視',
@@ -343,7 +346,8 @@ export default {
       sampleTime: 'サンプリング時刻',
       subgroupNo: 'サブグループ番号',
       values: '測定値',
-      valuesHint: 'カンマ区切り。件数は群サイズと一致させてください。',
+      valuesHint: 'カンマまたは空白区切り。件数は群サイズと一致させてください。',
+      fillExample: 'サンプル値を入れる',
       submit: '送信',
       result: '結果',
       noResult: '収集結果はまだありません',
@@ -372,6 +376,7 @@ export default {
       ackTitle: 'アラーム確認',
       closeTitle: 'アラームクローズ',
       remark: '備考',
+      empty: 'アラームはありません',
       open: '未処理',
       acked: '確認済',
       closed: 'クローズ',
@@ -386,7 +391,10 @@ export default {
       plan: '計画',
       exec: '実行',
       trigger: 'トリガー',
-      steps: 'ステップ JSON',
+      steps: '処置ステップ',
+      addAction: 'ステップ追加',
+      removeAction: '削除',
+      stepAction: 'アクション',
       owner: '担当者',
       start: '開始',
       complete: '完了',
@@ -414,7 +422,8 @@ export default {
       mean: '平均',
       stdev: '標準偏差',
       chart: '管理図',
-      window: '分析期間'
+      window: '分析期間',
+      empty: '能力分析の記録はありません。管理図を選んで計算してください。'
     },
     rule: {
       WE1: { name: 'WE1 管理限界超え', desc: '1点が Kσ を超える（既定 3σ）。' },

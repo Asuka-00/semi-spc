@@ -4,7 +4,7 @@
     <el-tabs v-model="activeTab" class="spc-panel !px-4 !pt-2">
       <el-tab-pane :label="$t('spc.ocap.plan')" name="plan">
         <div class="gva-btn-list"><el-button type="primary" icon="plus" @click="openPlan('add')">{{ $t('spc.ocap.addPlan') }}</el-button></div>
-        <el-table v-loading="plan.loading" :data="plan.tableData" row-key="ID">
+        <el-table v-loading="plan.loading" :data="plan.tableData" row-key="ID" :empty-text="$t('common.noData')">
           <el-table-column :label="$t('spc.ocap.planName')" prop="name" min-width="160" />
           <el-table-column :label="$t('spc.chart.tabChart')" min-width="140"><template #default="{ row }">{{ row.chart?.name || row.chartId }}</template></el-table-column>
           <el-table-column :label="$t('spc.ocap.trigger')" width="120"><template #default="{ row }">{{ $t(`spc.option.trigger.${row.triggerType}`, row.triggerType) }}</template></el-table-column>
@@ -15,7 +15,7 @@
       </el-tab-pane>
       <el-tab-pane :label="$t('spc.ocap.exec')" name="exec">
         <div class="gva-btn-list"><el-button type="primary" icon="plus" @click="openExec('add')">{{ $t('spc.ocap.addExec') }}</el-button></div>
-        <el-table v-loading="exec.loading" :data="exec.tableData" row-key="ID">
+        <el-table v-loading="exec.loading" :data="exec.tableData" row-key="ID" :empty-text="$t('common.noData')">
           <el-table-column :label="$t('spc.ocap.plan')" min-width="140"><template #default="{ row }">{{ row.ocap?.name || row.ocapId }}</template></el-table-column>
           <el-table-column :label="$t('spc.ocap.alarm')" prop="alarmId" width="90" />
           <el-table-column :label="$t('spc.ocap.owner')" prop="owner" width="120" />
@@ -37,11 +37,20 @@
         <el-form-item :label="$t('spc.chart.tabChart')" prop="chartId"><el-select v-model="plan.formData.chartId" class="w-full" filterable><el-option v-for="item in charts" :key="item.ID" :label="`${item.code} · ${item.name}`" :value="item.ID" /></el-select></el-form-item>
         <el-form-item :label="$t('spc.ocap.planName')" prop="name"><el-input v-model="plan.formData.name" /></el-form-item>
         <el-form-item :label="$t('spc.ocap.trigger')"><el-select v-model="plan.formData.triggerType" class="w-full"><el-option v-for="item in triggers" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
-        <el-form-item :label="$t('spc.ocap.steps')"><el-input v-model="plan.formData.stepsJson" type="textarea" :rows="6" /></el-form-item>
+        <el-form-item :label="$t('spc.ocap.steps')">
+          <div class="w-full space-y-2">
+            <div v-for="(step, idx) in planSteps" :key="idx" class="flex items-center gap-2">
+              <span class="w-6 shrink-0 text-xs text-slate-400">{{ idx + 1 }}</span>
+              <el-input v-model="step.action" :placeholder="$t('spc.ocap.stepAction')" />
+              <el-button link type="danger" @click="removePlanStep(idx)">{{ $t('spc.ocap.removeAction') }}</el-button>
+            </div>
+            <el-button size="small" @click="addPlanStep">{{ $t('spc.ocap.addAction') }}</el-button>
+          </div>
+        </el-form-item>
         <el-form-item :label="$t('common.status')"><el-radio-group v-model="plan.formData.status"><el-radio :label="1">{{ $t('common.enabled') }}</el-radio><el-radio :label="0">{{ $t('common.disabled') }}</el-radio></el-radio-group></el-form-item>
         <el-form-item :label="$t('common.remark')"><el-input v-model="plan.formData.remark" type="textarea" :rows="3" /></el-form-item>
       </el-form>
-      <template #footer><el-button @click="plan.closeDrawer">{{ $t('common.cancel') }}</el-button><el-button type="primary" @click="plan.enterDrawer">{{ $t('common.save') }}</el-button></template>
+      <template #footer><el-button @click="plan.closeDrawer">{{ $t('common.cancel') }}</el-button><el-button type="primary" @click="savePlan">{{ $t('common.save') }}</el-button></template>
     </el-drawer>
     <el-drawer v-model="exec.drawerVisible" :title="exec.drawerTitle" size="480px" destroy-on-close>
       <el-form :ref="bindFormRef(exec)" :model="exec.formData" :rules="execRules" label-width="110px">
@@ -69,12 +78,36 @@ const { t } = useI18n()
 const activeTab = ref('plan')
 const charts = ref([])
 const plans = ref([])
+const planSteps = ref([{ action: '' }])
 const triggers = computed(() => optionOf(t, 'spc.option.trigger', TRIGGER_VALUES))
 const plan = useSpcCrud({ listApi: ocapApi.getList, createApi: ocapApi.create, updateApi: ocapApi.update, deleteApi: ocapApi.remove })
 const exec = useSpcCrud({ listApi: ocapExecutionApi.getList, createApi: ocapExecutionApi.create, updateApi: ocapExecutionApi.update, deleteApi: ocapExecutionApi.remove })
 const planRules = computed(() => ({ chartId: selectRule(t), name: requiredRule(t) }))
 const execRules = computed(() => ({ ocapId: selectRule(t), alarmId: requiredRule(t, 'change') }))
-const openPlan = (type, row) => plan.openDrawer(type === 'add' ? t('spc.ocap.addPlan') : t('spc.ocap.editPlan'), type === 'add' ? { chartId: charts.value[0]?.ID, name: '', triggerType: 'OOC', stepsJson: '[]', status: 1, remark: '' } : row)
+
+const parseSteps = (raw) => {
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw || '[]') : raw
+    if (Array.isArray(parsed) && parsed.length) {
+      return parsed.map((item) => ({ action: item.action || item || '' }))
+    }
+  } catch (_) { /* ignore invalid json */ }
+  return [{ action: '' }]
+}
+
+const openPlan = (type, row) => {
+  plan.openDrawer(type === 'add' ? t('spc.ocap.addPlan') : t('spc.ocap.editPlan'), type === 'add' ? { chartId: charts.value[0]?.ID, name: '', triggerType: 'OOC', stepsJson: '[]', status: 1, remark: '' } : row)
+  planSteps.value = parseSteps(plan.formData.stepsJson)
+}
+const addPlanStep = () => planSteps.value.push({ action: '' })
+const removePlanStep = (idx) => {
+  planSteps.value.splice(idx, 1)
+  if (!planSteps.value.length) planSteps.value = [{ action: '' }]
+}
+const savePlan = () => {
+  plan.formData.stepsJson = JSON.stringify(planSteps.value.map((item, idx) => ({ step: idx + 1, action: item.action })))
+  plan.enterDrawer()
+}
 const openExec = (type, row) => exec.openDrawer(t('spc.ocap.addExec'), type === 'add' ? { ocapId: plans.value[0]?.ID, alarmId: undefined, owner: '', status: 'PENDING', remark: '' } : row)
 
 const startExec = async (row) => {

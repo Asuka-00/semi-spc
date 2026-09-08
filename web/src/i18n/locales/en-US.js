@@ -314,7 +314,10 @@ export default {
       cusumK: 'CUSUM K',
       cusumH: 'CUSUM H',
       current: 'Current',
-      rulesSaved: 'Rules saved'
+      rulesSaved: 'Rules saved',
+      recalc: 'Recalculate from samples',
+      recalcOk: 'Control limits recalculated',
+      needChart: 'Select a chart first'
     },
     runtime: {
       title: 'Runtime Monitor',
@@ -343,7 +346,8 @@ export default {
       sampleTime: 'Sample time',
       subgroupNo: 'Subgroup no.',
       values: 'Values',
-      valuesHint: 'Comma-separated numbers. Count should match subgroup size.',
+      valuesHint: 'Comma or space separated. Use Fill example to match subgroup size.',
+      fillExample: 'Fill example',
       submit: 'Submit sample',
       result: 'Result',
       noResult: 'No collection result yet',
@@ -372,6 +376,7 @@ export default {
       ackTitle: 'Acknowledge alarm',
       closeTitle: 'Close alarm',
       remark: 'Remark',
+      empty: 'No alarms',
       open: 'Open',
       acked: 'Acknowledged',
       closed: 'Closed',
@@ -386,7 +391,10 @@ export default {
       plan: 'Plans',
       exec: 'Executions',
       trigger: 'Trigger',
-      steps: 'Steps JSON',
+      steps: 'Action steps',
+      addAction: 'Add step',
+      removeAction: 'Remove',
+      stepAction: 'Action',
       owner: 'Owner',
       start: 'Start',
       complete: 'Complete',
@@ -414,7 +422,9 @@ export default {
       mean: 'Mean',
       stdev: 'Stdev',
       chart: 'Chart',
-      window: 'Window'
+      window: 'Window',
+      empty: 'No capability records yet. Select a chart and calculate.',
+      empty: 'No capability records yet. Select a chart and calculate.'
     },
     rule: {
       WE1: { name: 'WE1 beyond limits', desc: 'One point beyond Kσ (default 3σ).' },

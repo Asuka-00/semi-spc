@@ -5,7 +5,7 @@
       <div class="spc-panel xl:col-span-7">
         <el-form ref="formRef" :model="form" :rules="rules" label-width="120px">
           <el-form-item :label="$t('spc.collect.chartCode')" prop="chartCode">
-            <el-select v-model="form.chartCode" class="w-full" filterable>
+            <el-select v-model="form.chartCode" class="w-full" filterable @change="onChartChange">
               <el-option v-for="item in charts" :key="item.ID" :label="`${item.code} · ${item.name}`" :value="item.code" />
             </el-select>
           </el-form-item>
@@ -18,7 +18,10 @@
           <el-form-item :label="$t('spc.collect.subgroupNo')"><el-input-number v-model="form.subgroupNo" :min="1" class="!w-full" /></el-form-item>
           <el-form-item :label="$t('spc.collect.values')" prop="valuesText">
             <el-input v-model="form.valuesText" type="textarea" :rows="3" />
-            <div class="text-xs text-slate-400 mt-1">{{ $t('spc.collect.valuesHint') }}</div>
+            <div class="mt-1 flex items-center justify-between gap-2">
+              <div class="text-xs text-slate-400">{{ $t('spc.collect.valuesHint') }}</div>
+              <el-button link type="primary" @click="fillExample">{{ $t('spc.collect.fillExample') }}</el-button>
+            </div>
           </el-form-item>
           <el-form-item>
             <el-button type="primary" :loading="submitting" @click="submit">{{ $t('spc.collect.submit') }}</el-button>
@@ -84,6 +87,18 @@ const parseValues = () => {
   return values
 }
 
+const currentChart = () => charts.value.find((item) => item.code === form.chartCode)
+
+const fillExample = () => {
+  const chart = currentChart()
+  const n = Math.max(1, Number(chart?.subgroupSize) || 5)
+  const center = chart?.chartType === 'I_MR' ? 1500 : 45
+  const step = chart?.chartType === 'I_MR' ? 2 : 0.15
+  form.valuesText = Array.from({ length: n }, (_, i) => (center + ((i % 3) - 1) * step).toFixed(2)).join(', ')
+}
+
+const onChartChange = () => fillExample()
+
 const submit = async () => {
   await formRef.value?.validate()
   const values = parseValues()
@@ -120,6 +135,9 @@ onMounted(async () => {
   eqs.value = await loadOptions(equipmentApi.getList)
   chambers.value = await loadOptions(chamberApi.getList)
   recipes.value = await loadOptions(recipeApi.getList)
-  if (charts.value[0]) form.chartCode = charts.value[0].code
+  if (charts.value[0]) {
+    form.chartCode = charts.value[0].code
+    fillExample()
+  }
 })
 </script>

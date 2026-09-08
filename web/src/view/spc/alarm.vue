@@ -22,7 +22,7 @@
           </el-form-item>
         </el-form>
       </div>
-      <el-table v-loading="loading" :data="tableData" row-key="ID">
+      <el-table v-loading="loading" :data="tableData" row-key="ID" :empty-text="$t('spc.alarm.empty')">
         <el-table-column :label="$t('spc.alarm.type')" width="110">
           <template #default="{ row }"><el-tag :type="alarmTypeTag(row.alarmType)" round>{{ $t(`spc.option.alarmType.${row.alarmType}`, row.alarmType) }}</el-tag></template>
         </el-table-column>

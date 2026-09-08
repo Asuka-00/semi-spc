@@ -190,3 +190,33 @@ func (a *ChartApi) SaveChartRules(c *gin.Context) {
 	}
 	response.OkWithMessage("规则已保存", c)
 }
+
+type calculateControlLimitReq struct {
+	ChartID uint `json:"chartId"`
+	SampleN int  `json:"sampleN"`
+}
+
+// CalculateControlLimit
+// @Tags      SpcChart
+// @Summary   按样本重算控制限
+// @Security  ApiKeyAuth
+// @accept    application/json
+// @Produce   application/json
+// @Router    /spc/calculateControlLimit [post]
+func (a *ChartApi) CalculateControlLimit(c *gin.Context) {
+	var req calculateControlLimitReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	if req.ChartID == 0 {
+		response.FailWithMessage("chartId不能为空", c)
+		return
+	}
+	limit, err := chartService.CalculateAndSaveControlLimit(req.ChartID, req.SampleN)
+	if err != nil {
+		failUpdate(c, err)
+		return
+	}
+	response.OkWithData(limit, c)
+}

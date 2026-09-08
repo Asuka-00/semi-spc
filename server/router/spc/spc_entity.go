@@ -58,6 +58,7 @@ func (r *EntityRouter) InitSpcEntityRouter(Router *gin.RouterGroup) {
 		write.POST("completeOcapExecution", g.CompleteSpcOcapExecution)
 		write.POST("calculateCapability", g.CalculateCapability)
 		write.POST("saveChartRules", g.SaveChartRules)
+		write.POST("calculateControlLimit", g.CalculateControlLimit)
 	}
 	{
 		read.GET("findChamber", g.FindSpcChamber)

@@ -1,6 +1,8 @@
 package spc
 
 import (
+	"time"
+
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
@@ -64,9 +66,10 @@ func (s *AlarmService) GetAlarmStatistics(days int) (stats map[string]interface{
 		AlarmType string `json:"alarmType"`
 		Count     int64  `json:"count"`
 	}
+	from := time.Now().AddDate(0, 0, -days)
 	err = global.GVA_DB.Model(&spc.SpcAlarm{}).
 		Select("alarm_type, COUNT(*) as count").
-		Where("created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)", days).
+		Where("created_at >= ?", from).
 		Group("alarm_type").Find(&typeStats).Error
 	if err != nil {
 		return nil, err
@@ -80,7 +83,7 @@ func (s *AlarmService) GetAlarmStatistics(days int) (stats map[string]interface{
 	}
 	err = global.GVA_DB.Model(&spc.SpcAlarm{}).
 		Select("status, COUNT(*) as count").
-		Where("created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)", days).
+		Where("created_at >= ?", from).
 		Group("status").Find(&statusStats).Error
 	if err != nil {
 		return nil, err
@@ -94,7 +97,7 @@ func (s *AlarmService) GetAlarmStatistics(days int) (stats map[string]interface{
 	}
 	err = global.GVA_DB.Model(&spc.SpcAlarm{}).
 		Select("severity, COUNT(*) as count").
-		Where("created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)", days).
+		Where("created_at >= ?", from).
 		Group("severity").Find(&severityStats).Error
 	if err != nil {
 		return nil, err

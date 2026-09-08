@@ -159,19 +159,25 @@ func (s *CollectService) CollectData(req *CollectDataRequest) (*CollectDataRespo
 
 			// 获取启用的规则
 			rules, _ := chartService.GetActiveRules(chart.ID)
-			enabledRules := []string{}
+			configs := make([]engine.RuleConfig, 0, len(rules))
 			for _, r := range rules {
-				enabledRules = append(enabledRules, r.RuleCode)
+				if !r.Enabled {
+					continue
+				}
+				configs = append(configs, engine.RuleConfig{
+					RuleCode: r.RuleCode,
+					N:        r.N,
+					Hits:     r.Hits,
+					K:        r.K,
+					Severity: r.Severity,
+				})
+			}
+			if len(configs) == 0 {
+				configs = []engine.RuleConfig{engine.DefaultRuleConfig("WE1")}
 			}
 
-			// 如果没有配置规则，默认使用WE1
-			if len(enabledRules) == 0 {
-				enabledRules = []string{"WE1"}
-			}
-
-			// 检测OOC
 			if controlLimit.UCL != nil && controlLimit.LCL != nil && controlLimit.CL != nil {
-				violations = engine.CheckOOC(values, *controlLimit.UCL, *controlLimit.CL, *controlLimit.LCL, enabledRules)
+				violations = engine.CheckOOCWithConfig(values, *controlLimit.UCL, *controlLimit.CL, *controlLimit.LCL, configs)
 			}
 		}
 	}

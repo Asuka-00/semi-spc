@@ -54,7 +54,7 @@ func (a *SiteApi) DeleteSpcSite(c *gin.Context) {
 		return
 	}
 
-	err = siteService.DeleteSpcSite(idReq.ID)
+	err = siteService.DeleteSpcSite(idReq.Uint())
 	if err != nil {
 		global.GVA_LOG.Error("删除失败!", zap.Error(err))
 		response.FailWithMessage("删除失败", c)
@@ -106,7 +106,7 @@ func (a *SiteApi) GetSpcSite(c *gin.Context) {
 		return
 	}
 
-	site, err := siteService.GetSpcSite(idReq.ID)
+	site, err := siteService.GetSpcSite(idReq.Uint())
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败", c)
@@ -125,11 +125,13 @@ func (a *SiteApi) GetSpcSite(c *gin.Context) {
 // @Success   200   {object}  response.Response{data=response.PageResult,msg=string}  "获取成功"
 // @Router    /spc/getSiteList [get]
 func (a *SiteApi) GetSpcSiteList(c *gin.Context) {
-	var pageInfo request.PageInfo
-	err := c.ShouldBindQuery(&pageInfo)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
+	pageInfo := parsePage(c)
+	if pageInfo.Keyword == "" {
+		if code := c.Query("code"); code != "" {
+			pageInfo.Keyword = code
+		} else if name := c.Query("name"); name != "" {
+			pageInfo.Keyword = name
+		}
 	}
 
 	list, total, err := siteService.GetSpcSiteList(pageInfo)

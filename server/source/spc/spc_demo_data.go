@@ -1,4 +1,4 @@
-package source
+package spc
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
+	sysService "github.com/flipped-aurora/gin-vue-admin/server/service/system"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +14,7 @@ type initSpcDemoData struct{}
 
 // auto initialize data
 func init() {
-	RegisterInit(InitOrderExternal, &initSpcDemoData{})
+	sysService.RegisterInit(sysService.InitOrderExternal+10, &initSpcDemoData{})
 }
 
 func (i *initSpcDemoData) InitializerName() string {
@@ -229,9 +230,9 @@ func (i *initSpcDemoData) InitializeData(ctx context.Context) (next context.Cont
 
 	// 10. 创建规则
 	rules := []spc.SpcRule{
-		{ChartID: chartCD.ID, RuleCode: "WE1", Enabled: true, N: 1, K: 3.0, Remark: "点超出控制限"},
-		{ChartID: chartCD.ID, RuleCode: "WE2", Enabled: true, N: 3, K: 2.0, Remark: "3点中2点超出2σ"},
-		{ChartID: chartCD.ID, RuleCode: "WE4", Enabled: true, N: 8, K: 0.0, Remark: "连续8点同侧"},
+		{ChartID: chartCD.ID, RuleCode: "WE1", Enabled: true, N: 1, Hits: 1, K: 3.0, Severity: "CRIT", Remark: "点超出控制限"},
+		{ChartID: chartCD.ID, RuleCode: "WE2", Enabled: true, N: 3, Hits: 2, K: 2.0, Severity: "WARN", Remark: "3点中2点超出2σ"},
+		{ChartID: chartCD.ID, RuleCode: "WE4", Enabled: true, N: 8, Hits: 8, K: 0.0, Severity: "WARN", Remark: "连续8点同侧"},
 	}
 	if err = db.Create(&rules).Error; err != nil {
 		return ctx, err

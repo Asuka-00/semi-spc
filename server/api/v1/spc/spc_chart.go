@@ -5,6 +5,7 @@ import (
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/spc"
+	"github.com/flipped-aurora/gin-vue-admin/server/service/spc/engine"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -54,7 +55,7 @@ func (a *ChartApi) DeleteSpcChart(c *gin.Context) {
 		return
 	}
 
-	err = chartService.DeleteSpcChart(idReq.ID)
+	err = chartService.DeleteSpcChart(idReq.Uint())
 	if err != nil {
 		global.GVA_LOG.Error("删除失败!", zap.Error(err))
 		response.FailWithMessage("删除失败", c)
@@ -106,7 +107,7 @@ func (a *ChartApi) FindSpcChart(c *gin.Context) {
 		return
 	}
 
-	chart, err := chartService.GetSpcChart(idReq.ID)
+	chart, err := chartService.GetSpcChart(idReq.Uint())
 	if err != nil {
 		global.GVA_LOG.Error("获取失败!", zap.Error(err))
 		response.FailWithMessage("获取失败", c)
@@ -125,11 +126,13 @@ func (a *ChartApi) FindSpcChart(c *gin.Context) {
 // @Success   200   {object}  response.Response{data=response.PageResult,msg=string}  "获取成功"
 // @Router    /spc/getChartList [get]
 func (a *ChartApi) GetSpcChartList(c *gin.Context) {
-	var pageInfo request.PageInfo
-	err := c.ShouldBindQuery(&pageInfo)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
+	pageInfo := parsePage(c)
+	if pageInfo.Keyword == "" {
+		if code := c.Query("code"); code != "" {
+			pageInfo.Keyword = code
+		} else if name := c.Query("name"); name != "" {
+			pageInfo.Keyword = name
+		}
 	}
 
 	list, total, err := chartService.GetSpcChartList(pageInfo)
@@ -144,4 +147,46 @@ func (a *ChartApi) GetSpcChartList(c *gin.Context) {
 		Page:     pageInfo.Page,
 		PageSize: pageInfo.PageSize,
 	}, "获取成功", c)
+}
+
+// GetRuleCatalog
+// @Tags      SpcRule
+// @Summary   获取可配置规则目录
+// @Security  ApiKeyAuth
+// @accept    application/json
+// @Produce   application/json
+// @Success   200  {object}  response.Response
+// @Router    /spc/getRuleCatalog [get]
+func (a *ChartApi) GetRuleCatalog(c *gin.Context) {
+	response.OkWithData(engine.RuleCatalog(), c)
+}
+
+type saveChartRulesReq struct {
+	ChartID uint          `json:"chartId"`
+	Rules   []spc.SpcRule `json:"rules"`
+}
+
+// SaveChartRules
+// @Tags      SpcRule
+// @Summary   覆盖保存控制图规则配置
+// @Security  ApiKeyAuth
+// @accept    application/json
+// @Produce   application/json
+// @Success   200  {object}  response.Response
+// @Router    /spc/saveChartRules [post]
+func (a *ChartApi) SaveChartRules(c *gin.Context) {
+	var req saveChartRulesReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.FailWithMessage(err.Error(), c)
+		return
+	}
+	if req.ChartID == 0 {
+		response.FailWithMessage("chartId不能为空", c)
+		return
+	}
+	if err := chartService.SaveChartRules(req.ChartID, req.Rules); err != nil {
+		failUpdate(c, err)
+		return
+	}
+	response.OkWithMessage("规则已保存", c)
 }

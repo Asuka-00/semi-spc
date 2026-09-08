@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/flipped-aurora/gin-vue-admin/server/global"
-	"github.com/flipped-aurora/gin-vue-admin/server/model/common/request"
 	"github.com/flipped-aurora/gin-vue-admin/server/model/common/response"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -24,13 +23,7 @@ type AlarmApi struct{}
 // @Success   200   {object}  response.Response{data=response.PageResult}  "获取成功"
 // @Router    /spc/getAlarmList [get]
 func (a *AlarmApi) GetSpcAlarmList(c *gin.Context) {
-	var pageInfo request.PageInfo
-	err := c.ShouldBindQuery(&pageInfo)
-	if err != nil {
-		response.FailWithMessage(err.Error(), c)
-		return
-	}
-
+	pageInfo := parsePage(c)
 	status := c.Query("status")
 	alarmType := c.Query("alarmType")
 
@@ -59,15 +52,25 @@ func (a *AlarmApi) GetSpcAlarmList(c *gin.Context) {
 // @Success   200   {object}  response.Response{msg=string}  "确认成功"
 // @Router    /spc/acknowledgeAlarm [post]
 func (a *AlarmApi) AcknowledgeAlarm(c *gin.Context) {
-	var req request.GetById
+	var req struct {
+		ID     int    `json:"ID"`
+		Id     int    `json:"id"`
+		Remark string `json:"remark"`
+	}
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-
-	remark := c.Query("remark")
-	err = alarmService.AcknowledgeAlarm(req.ID, remark)
+	id := uint(req.ID)
+	if id == 0 {
+		id = uint(req.Id)
+	}
+	remark := req.Remark
+	if remark == "" {
+		remark = c.Query("remark")
+	}
+	err = alarmService.AcknowledgeAlarm(id, remark)
 	if err != nil {
 		global.GVA_LOG.Error("确认失败!", zap.Error(err))
 		response.FailWithMessage("确认失败", c)
@@ -86,15 +89,25 @@ func (a *AlarmApi) AcknowledgeAlarm(c *gin.Context) {
 // @Success   200   {object}  response.Response{msg=string}  "关闭成功"
 // @Router    /spc/closeAlarm [post]
 func (a *AlarmApi) CloseAlarm(c *gin.Context) {
-	var req request.GetById
+	var req struct {
+		ID     int    `json:"ID"`
+		Id     int    `json:"id"`
+		Remark string `json:"remark"`
+	}
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		response.FailWithMessage(err.Error(), c)
 		return
 	}
-
-	remark := c.Query("remark")
-	err = alarmService.CloseAlarm(req.ID, remark)
+	id := uint(req.ID)
+	if id == 0 {
+		id = uint(req.Id)
+	}
+	remark := req.Remark
+	if remark == "" {
+		remark = c.Query("remark")
+	}
+	err = alarmService.CloseAlarm(id, remark)
 	if err != nil {
 		global.GVA_LOG.Error("关闭失败!", zap.Error(err))
 		response.FailWithMessage("关闭失败", c)

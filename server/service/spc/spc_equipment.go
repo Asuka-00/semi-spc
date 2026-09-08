@@ -26,15 +26,20 @@ func (s *EquipmentService) GetSpcEquipment(id uint) (equipment spc.SpcEquipment,
 }
 
 func (s *EquipmentService) GetSpcEquipmentList(info request.PageInfo, siteID, areaID uint) (list []spc.SpcEquipment, total int64, err error) {
+	info = normalizePage(info)
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	db := global.GVA_DB.Model(&spc.SpcEquipment{}).Preload("Site").Preload("Area")
-	
+
 	if siteID > 0 {
 		db = db.Where("site_id = ?", siteID)
 	}
 	if areaID > 0 {
 		db = db.Where("area_id = ?", areaID)
+	}
+	if info.Keyword != "" {
+		kw := "%" + info.Keyword + "%"
+		db = db.Where("code LIKE ? OR name LIKE ?", kw, kw)
 	}
 	
 	err = db.Count(&total).Error

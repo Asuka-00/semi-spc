@@ -1,206 +1,92 @@
 <template>
-  <!-- SPC能力分析 -->
-  <div>
-    <el-card shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <span>能力分析计算</span>
-        </div>
-      </template>
-      <el-form ref="formRef" :model="formData" :rules="rules" label-width="120px">
-        <el-row :gutter="20">
-          <el-col :span="8">
-            <el-form-item label="控制图ID" prop="chart_id">
-              <el-input-number v-model="formData.chart_id" :min="1" placeholder="请输入控制图ID" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="开始时间" prop="start_time">
-              <el-date-picker
-                v-model="formData.start_time"
-                type="datetime"
-                placeholder="选择开始时间"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="结束时间" prop="end_time">
-              <el-date-picker
-                v-model="formData.end_time"
-                type="datetime"
-                placeholder="选择结束时间"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+  <div class="space-y-4">
+    <SpcPageHeader :title="$t('spc.capability.title')" :subtitle="$t('spc.capability.subtitle')" />
+    <div class="spc-panel">
+      <el-form :inline="true" :model="form">
+        <el-form-item :label="$t('spc.capability.chart')">
+          <el-select v-model="form.chartId" filterable style="width: 260px">
+            <el-option v-for="item in charts" :key="item.ID" :label="`${item.code} · ${item.name}`" :value="item.ID" />
+          </el-select>
+        </el-form-item>
+        <el-form-item :label="$t('spc.capability.from')"><el-date-picker v-model="form.windowFrom" type="datetime" /></el-form-item>
+        <el-form-item :label="$t('spc.capability.to')"><el-date-picker v-model="form.windowTo" type="datetime" /></el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="calculate">计算能力指数</el-button>
-          <el-button @click="resetForm">重置</el-button>
+          <el-button type="primary" :loading="calculating" @click="calc">{{ $t('spc.capability.calculate') }}</el-button>
+          <el-button @click="loadHistory">{{ $t('common.refresh') }}</el-button>
         </el-form-item>
       </el-form>
-    </el-card>
-
-    <el-card shadow="hover" style="margin-top: 20px" v-if="capabilityResult">
-      <template #header>
-        <div class="card-header">
-          <span>能力分析结果</span>
-        </div>
-      </template>
-      <el-row :gutter="20">
-        <el-col :span="6">
-          <el-statistic title="Cp (短期能力)" :value="capabilityResult.cp" :precision="3">
-            <template #suffix>
-              <el-tag :type="getCapabilityType(capabilityResult.cp)" size="small">
-                {{ getCapabilityLevel(capabilityResult.cp) }}
-              </el-tag>
-            </template>
-          </el-statistic>
-        </el-col>
-        <el-col :span="6">
-          <el-statistic title="Cpk (短期能力指数)" :value="capabilityResult.cpk" :precision="3">
-            <template #suffix>
-              <el-tag :type="getCapabilityType(capabilityResult.cpk)" size="small">
-                {{ getCapabilityLevel(capabilityResult.cpk) }}
-              </el-tag>
-            </template>
-          </el-statistic>
-        </el-col>
-        <el-col :span="6">
-          <el-statistic title="Pp (长期性能)" :value="capabilityResult.pp" :precision="3">
-            <template #suffix>
-              <el-tag :type="getCapabilityType(capabilityResult.pp)" size="small">
-                {{ getCapabilityLevel(capabilityResult.pp) }}
-              </el-tag>
-            </template>
-          </el-statistic>
-        </el-col>
-        <el-col :span="6">
-          <el-statistic title="Ppk (长期性能指数)" :value="capabilityResult.ppk" :precision="3">
-            <template #suffix>
-              <el-tag :type="getCapabilityType(capabilityResult.ppk)" size="small">
-                {{ getCapabilityLevel(capabilityResult.ppk) }}
-              </el-tag>
-            </template>
-          </el-statistic>
-        </el-col>
-      </el-row>
-
-      <el-divider />
-
-      <div class="capability-histogram">
-        <el-empty description="能力直方图 - 待集成ECharts">
-          <template #description>
-            <p>此处将展示:</p>
-            <ul style="text-align: left; display: inline-block">
-              <li>数据分布直方图</li>
-              <li>正态分布曲线拟合</li>
-              <li>规格限标记 (USL, LSL)</li>
-              <li>均值和标准差标注</li>
-            </ul>
-          </template>
-        </el-empty>
-      </div>
-    </el-card>
-
-    <el-card shadow="hover" style="margin-top: 20px">
-      <template #header>
-        <div class="card-header">
-          <span>历史能力分析记录</span>
-        </div>
-      </template>
-      <el-table :data="historyData" style="width: 100%">
-        <el-table-column prop="ID" label="ID" width="80" />
-        <el-table-column prop="chart_id" label="控制图" width="100" />
-        <el-table-column prop="cp" label="Cp" width="100" :formatter="numberFormatter" />
-        <el-table-column prop="cpk" label="Cpk" width="100" :formatter="numberFormatter" />
-        <el-table-column prop="pp" label="Pp" width="100" :formatter="numberFormatter" />
-        <el-table-column prop="ppk" label="Ppk" width="100" :formatter="numberFormatter" />
-        <el-table-column prop="start_time" label="开始时间" width="180" :formatter="dateFormatter" />
-        <el-table-column prop="end_time" label="结束时间" width="180" :formatter="dateFormatter" />
-        <el-table-column prop="CreatedAt" label="计算时间" width="180" :formatter="dateFormatter" />
+    </div>
+    <div v-if="latest" class="grid grid-cols-2 gap-4 xl:grid-cols-6">
+      <SpcStatCard title="Cp" :value="latest.cp" :precision="3" :hint="capabilityLevel(latest.cp, t).text" icon="DataAnalysis" color="#0ea5e9" />
+      <SpcStatCard title="Cpk" :value="latest.cpk" :precision="3" :hint="capabilityLevel(latest.cpk, t).text" icon="TrendCharts" color="#10b981" />
+      <SpcStatCard title="Pp" :value="latest.pp" :precision="3" icon="PieChart" color="#8b5cf6" />
+      <SpcStatCard title="Ppk" :value="latest.ppk" :precision="3" icon="Histogram" color="#f59e0b" />
+      <SpcStatCard :title="$t('spc.capability.n')" :value="latest.n" icon="Tickets" color="#64748b" />
+      <SpcStatCard :title="$t('spc.capability.mean')" :value="latest.meanVal" :precision="3" icon="Odometer" color="#0284c7" />
+    </div>
+    <div class="spc-panel">
+      <div class="mb-3 text-sm font-semibold">{{ $t('spc.capability.history') }}</div>
+      <el-table :data="history" row-key="ID">
+        <el-table-column :label="$t('spc.capability.chart')" min-width="140"><template #default="{ row }">{{ row.chart?.name || row.chartId }}</template></el-table-column>
+        <el-table-column :label="$t('spc.capability.window')" min-width="220"><template #default="{ row }">{{ formatDate(row.windowFrom) }} ~ {{ formatDate(row.windowTo) }}</template></el-table-column>
+        <el-table-column label="N" prop="n" width="70" />
+        <el-table-column label="Cp" width="90"><template #default="{ row }"><el-tag :type="capabilityLevel(row.cp, t).type">{{ num(row.cp, 3) }}</el-tag></template></el-table-column>
+        <el-table-column label="Cpk" width="90"><template #default="{ row }"><el-tag :type="capabilityLevel(row.cpk, t).type">{{ num(row.cpk, 3) }}</el-tag></template></el-table-column>
+        <el-table-column label="Pp" width="90"><template #default="{ row }">{{ num(row.pp, 3) }}</template></el-table-column>
+        <el-table-column label="Ppk" width="90"><template #default="{ row }">{{ num(row.ppk, 3) }}</template></el-table-column>
       </el-table>
-    </el-card>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
+import { calculateCapability, chartApi, getCapabilityList } from '@/api/spc'
 import { formatDate } from '@/utils/format'
+import { capabilityLevel, num } from './constants'
+import { loadOptions } from './composables/useSpcCrud'
+import SpcPageHeader from './components/SpcPageHeader.vue'
+import SpcStatCard from './components/SpcStatCard.vue'
 
-const formRef = ref(null)
-const formData = ref({
-  chart_id: null,
-  start_time: null,
-  end_time: null
+const { t } = useI18n()
+const charts = ref([])
+const history = ref([])
+const latest = ref(null)
+const calculating = ref(false)
+const form = reactive({
+  chartId: undefined,
+  windowFrom: new Date(Date.now() - 7 * 24 * 3600 * 1000),
+  windowTo: new Date()
 })
 
-const capabilityResult = ref(null)
-const historyData = ref([])
+const loadHistory = async () => {
+  const res = await getCapabilityList({ page: 1, pageSize: 20, chartId: form.chartId })
+  if (res.code === 0) history.value = res.data?.list || []
+}
 
-const rules = reactive({
-  chart_id: [{ required: true, message: '请输入控制图ID', trigger: 'blur' }],
-  start_time: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
-  end_time: [{ required: true, message: '请选择结束时间', trigger: 'change' }]
-})
-
-const calculate = async() => {
-  formRef.value?.validate(async(valid) => {
-    if (valid) {
-      capabilityResult.value = {
-        cp: 1.45,
-        cpk: 1.32,
-        pp: 1.40,
-        ppk: 1.28
-      }
-      ElMessage.success('能力分析计算完成')
+const calc = async () => {
+  if (!form.chartId) {
+    ElMessage.warning(t('common.pleaseSelect'))
+    return
+  }
+  calculating.value = true
+  try {
+    const res = await calculateCapability({ chartId: form.chartId, windowFrom: form.windowFrom, windowTo: form.windowTo })
+    if (res.code === 0) {
+      latest.value = res.data
+      ElMessage.success(t('common.success'))
+      await loadHistory()
     }
-  })
+  } finally {
+    calculating.value = false
+  }
 }
 
-const resetForm = () => {
-  formRef.value?.resetFields()
-  capabilityResult.value = null
-}
-
-const getCapabilityType = (value) => {
-  if (value >= 1.67) return 'success'
-  if (value >= 1.33) return 'warning'
-  return 'danger'
-}
-
-const getCapabilityLevel = (value) => {
-  if (value >= 1.67) return '优秀'
-  if (value >= 1.33) return '良好'
-  if (value >= 1.00) return '一般'
-  return '不足'
-}
-
-const numberFormatter = (row, column, cellValue) => {
-  return cellValue ? cellValue.toFixed(3) : '-'
-}
-
-const dateFormatter = (row, column, cellValue) => {
-  return formatDate(cellValue)
-}
+onMounted(async () => {
+  charts.value = await loadOptions(chartApi.getList)
+  if (charts.value[0]) form.chartId = charts.value[0].ID
+  await loadHistory()
+})
 </script>
-
-<style scoped>
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.capability-histogram {
-  height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed #dcdfe6;
-  border-radius: 4px;
-  margin-top: 20px;
-}
-</style>

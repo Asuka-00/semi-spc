@@ -15,13 +15,13 @@
         <el-icon v-if="routerInfo.meta.icon">
           <component :is="routerInfo.meta.icon" />
         </el-icon>
-        <span>{{ routerInfo.meta.title }}</span>
+        <span>{{ displayTitle }}</span>
       </div>
       <template v-else>
         <el-icon v-if="routerInfo.meta.icon">
           <component :is="routerInfo.meta.icon" />
         </el-icon>
-        <span>{{ routerInfo.meta.title }}</span>
+        <span>{{ displayTitle }}</span>
       </template>
     </template>
     <slot />
@@ -32,6 +32,7 @@
   import { inject, computed } from 'vue'
   import { useAppStore } from '@/pinia'
   import { storeToRefs } from 'pinia'
+  import { translateMenuTitle } from '@/i18n'
   const appStore = useAppStore()
   const { config } = storeToRefs(appStore)
 
@@ -39,7 +40,7 @@
     name: 'AsyncSubmenu'
   })
 
-  defineProps({
+  const props = defineProps({
     routerInfo: {
       default: function () {
         return null
@@ -47,6 +48,10 @@
       type: Object
     }
   })
+
+  const displayTitle = computed(() =>
+    translateMenuTitle(props.routerInfo?.meta?.title, props.routerInfo?.name)
+  )
 
   const isCollapse = inject('isCollapse', {
     default: false

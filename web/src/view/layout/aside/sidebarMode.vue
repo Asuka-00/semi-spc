@@ -30,10 +30,10 @@
                 <component :is="item.meta.icon" />
               </el-icon>
               <template v-else>
-                {{ item.meta.title[0] }}
+                {{ menuTitle(item)[0] }}
               </template>
               <template #title>
-                {{ item.meta.title }}
+                {{ menuTitle(item) }}
               </template>
             </el-menu-item>
             <template v-else-if="!item.hidden" >
@@ -50,10 +50,10 @@
                 <component :is="item.meta.icon" />
               </el-icon>
               <template v-else>
-                {{ item.meta.title[0] }}
+                {{ menuTitle(item)[0] }}
                 </template>
               <template #title>
-                {{ item.meta.title }}
+                {{ menuTitle(item) }}
               </template>
             </el-menu-item>
             </template>
@@ -110,6 +110,7 @@
   import { useRouterStore } from '@/pinia/modules/router'
   import { useAppStore } from '@/pinia'
   import { storeToRefs } from 'pinia'
+  import { translateMenuTitle } from '@/i18n'
 
   const appStore = useAppStore()
   const { device, config } = storeToRefs(appStore)
@@ -133,6 +134,8 @@
       return config.value.layout_side_collapsed_width
     }
   })
+
+  const menuTitle = (item) => translateMenuTitle(item?.meta?.title, item?.name)
 
 
   provide('isCollapse', isCollapse)

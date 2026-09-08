@@ -9,10 +9,10 @@
       <component :is="routerInfo.meta.icon" />
     </el-icon>
     <template v-else>
-      {{ isCollapse ? routerInfo.meta.title[0] : "" }}
+      {{ isCollapse ? displayTitle[0] : "" }}
     </template>
     <template #title>
-      {{ routerInfo.meta.title }}
+      {{ displayTitle }}
     </template>
   </el-menu-item>
 </template>
@@ -21,6 +21,7 @@
 import {computed, inject} from 'vue'
   import { useAppStore } from '@/pinia'
   import { storeToRefs } from 'pinia'
+  import { translateMenuTitle } from '@/i18n'
   const appStore = useAppStore()
   const { config } = storeToRefs(appStore)
 
@@ -28,7 +29,7 @@ import {computed, inject} from 'vue'
     name: 'MenuItem'
   })
 
-  defineProps({
+  const props = defineProps({
     routerInfo: {
       default: function () {
         return null
@@ -36,6 +37,10 @@ import {computed, inject} from 'vue'
       type: Object
     }
   })
+
+  const displayTitle = computed(() =>
+    translateMenuTitle(props.routerInfo?.meta?.title, props.routerInfo?.name)
+  )
 
 const isCollapse = inject('isCollapse', {
   default: false

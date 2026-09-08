@@ -37,10 +37,15 @@ func (s *SiteService) GetSpcSiteByCode(code string) (site spc.SpcSite, err error
 
 // GetSpcSiteList 分页获取厂区列表
 func (s *SiteService) GetSpcSiteList(info request.PageInfo) (list []spc.SpcSite, total int64, err error) {
+	info = normalizePage(info)
 	limit := info.PageSize
 	offset := info.PageSize * (info.Page - 1)
 	db := global.GVA_DB.Model(&spc.SpcSite{})
-	
+	if info.Keyword != "" {
+		kw := "%" + info.Keyword + "%"
+		db = db.Where("code LIKE ? OR name LIKE ?", kw, kw)
+	}
+
 	err = db.Count(&total).Error
 	if err != nil {
 		return

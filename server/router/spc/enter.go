@@ -11,7 +11,7 @@ type RouterGroup struct {
 	ChartRouter
 	CollectRouter
 	AlarmRouter
-	CapabilityRouter
+	EntityRouter
 }
 
 var (

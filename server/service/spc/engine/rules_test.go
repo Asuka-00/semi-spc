@@ -69,26 +69,55 @@ func TestCheckWE4(t *testing.T) {
 	}
 }
 
-func TestCheckNELSON5(t *testing.T) {
+func TestCheckNELSON3(t *testing.T) {
 	values := []float64{100.0, 101.0, 102.0, 103.0, 104.0, 105.0}
-	violations := checkNELSON5(values)
+	violations := checkNELSON3(values)
 	if len(violations) == 0 {
-		t.Error("Expected NELSON5 violation for 6 increasing points")
+		t.Error("Expected NELSON3 violation for 6 increasing points")
 	}
-	if violations[0].RuleCode != "NELSON5" {
-		t.Errorf("Expected rule code NELSON5, got %s", violations[0].RuleCode)
+	if violations[0].RuleCode != "NELSON3" {
+		t.Errorf("Expected rule code NELSON3, got %s", violations[0].RuleCode)
 	}
 
 	values = []float64{105.0, 104.0, 103.0, 102.0, 101.0, 100.0}
-	violations = checkNELSON5(values)
+	violations = checkNELSON3(values)
 	if len(violations) == 0 {
-		t.Error("Expected NELSON5 violation for 6 decreasing points")
+		t.Error("Expected NELSON3 violation for 6 decreasing points")
 	}
 
 	values = []float64{100.0, 101.0, 102.0, 101.0, 104.0, 105.0}
-	violations = checkNELSON5(values)
+	violations = checkNELSON3(values)
 	if len(violations) > 0 {
-		t.Error("Expected no NELSON5 violation")
+		t.Error("Expected no NELSON3 violation")
+	}
+}
+
+func TestConfigurableRuleN(t *testing.T) {
+	cl := 100.0
+	values := []float64{101, 102, 103, 104}
+	cfg := RuleConfig{RuleCode: "WE4", N: 4, Severity: "WARN"}
+	v := checkConsecutiveSide(values, cl, cfg.withDefaults())
+	if v == nil {
+		t.Fatal("Expected WE4 with N=4 to fire")
+	}
+	if len(v.Points) != 4 {
+		t.Errorf("Expected 4 points, got %d", len(v.Points))
+	}
+
+	cfg.N = 8
+	v = checkConsecutiveSide(values, cl, cfg.withDefaults())
+	if v != nil {
+		t.Error("Expected no violation when N=8 but only 4 points")
+	}
+}
+
+func TestConfigurableKOfN(t *testing.T) {
+	ucl, cl := 110.0, 100.0
+	values := []float64{107, 108, 101}
+	cfg := RuleConfig{RuleCode: "WE2", N: 3, Hits: 2, K: 2, Severity: "WARN"}
+	vs := checkKOfNZone(values, ucl, cl, cfg.withDefaults())
+	if len(vs) == 0 {
+		t.Fatal("Expected WE2 with custom 2-of-3 beyond 2σ")
 	}
 }
 

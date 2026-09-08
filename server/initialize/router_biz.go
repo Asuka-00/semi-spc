@@ -25,4 +25,5 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 	spcRouter.InitSpcChartRouter(privateGroup)
 	spcRouter.InitSpcCollectRouter(privateGroup, publicGroup)
 	spcRouter.InitSpcAlarmRouter(privateGroup)
+	spcRouter.InitSpcEntityRouter(privateGroup)
 }
